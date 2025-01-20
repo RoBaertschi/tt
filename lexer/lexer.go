@@ -64,20 +64,20 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.ch {
 	case ';':
-		tok = l.newToken(token.SEMICOLON)
+		tok = l.newToken(token.Semicolon)
 	case '=':
-		tok = l.newToken(token.EQUAL)
+		tok = l.newToken(token.Equal)
 	case '(':
-		tok = l.newToken(token.OPEN_PAREN)
+		tok = l.newToken(token.OpenParen)
 	case ')':
-		tok = l.newToken(token.CLOSE_PAREN)
+		tok = l.newToken(token.CloseParen)
 	case -1:
 		tok.Literal = ""
-		tok.Type = token.EOF
+		tok.Type = token.Eof
 	default:
 		if isNumber(l.ch) {
 			tok.Literal = l.readInteger()
-			tok.Type = token.INT
+			tok.Type = token.Int
 			return tok
 		} else if unicode.IsLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
@@ -87,7 +87,7 @@ func (l *Lexer) NextToken() token.Token {
 			if l.errorCallback != nil {
 				l.errorCallback(tok.Loc, "Unknown character %r", l.ch)
 			}
-			tok = l.newToken(token.ILLEGAL)
+			tok = l.newToken(token.Illegal)
 		}
 	}
 	if err := l.readChar(); err != nil {
@@ -164,7 +164,7 @@ func (l *Lexer) skipWhitespace() {
 
 func (l *Lexer) error(loc token.Loc, format string, args ...any) {
 	if l.errorCallback != nil {
-		l.errorCallback(loc, format, args)
+		l.errorCallback(loc, format, args...)
 	}
 
 	l.errors += 1

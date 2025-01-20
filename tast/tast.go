@@ -1,10 +1,15 @@
-package ast
+// Typed AST
+// Almost identical to the AST, but contains types and contains only correct types.
+// Also, it does not contain a Error Expression, because, that an previous error
+
+package tast
 
 import (
 	"fmt"
 	"strings"
 
 	"robaertschi.xyz/robaertschi/tt/token"
+	"robaertschi.xyz/robaertschi/tt/types"
 )
 
 type Node interface {
@@ -20,6 +25,7 @@ type Declaration interface {
 type Expression interface {
 	Node
 	expressionNode()
+	Type() types.Type
 }
 
 type Program struct {
@@ -45,31 +51,26 @@ func (p *Program) String() string {
 }
 
 type FunctionDeclaration struct {
-	Token token.Token // The token.FN
-	Body  Expression
-	Name  string
+	Token      token.Token // The token.FN
+	Body       Expression
+	Name       string
+	ReturnType types.Type
 }
 
 func (fd *FunctionDeclaration) declarationNode()     {}
 func (fd *FunctionDeclaration) TokenLiteral() string { return fd.Token.Literal }
 func (fd *FunctionDeclaration) String() string {
-	return fmt.Sprintf("fn %v() = %v;", fd.Name, fd.Body.String())
+	return fmt.Sprintf("fn %v(): %v = %v;", fd.Name, fd.ReturnType.Name(), fd.Body.String())
 }
-
-// Represents a Expression that we failed to parse
-type ErrorExpression struct {
-	InvalidToken token.Token
-}
-
-func (e *ErrorExpression) expressionNode()      {}
-func (e *ErrorExpression) TokenLiteral() string { return e.InvalidToken.Literal }
-func (e *ErrorExpression) String() string       { return "<ERROR EXPR>" }
 
 type IntegerExpression struct {
 	Token token.Token // The token.INT
 	Value int64
 }
 
-func (ie *IntegerExpression) expressionNode()      {}
+func (ie *IntegerExpression) expressionNode() {}
+func (ie *IntegerExpression) Type() types.Type {
+	return types.I64
+}
 func (ie *IntegerExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *IntegerExpression) String() string       { return ie.Token.Literal }

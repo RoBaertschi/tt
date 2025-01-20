@@ -16,28 +16,28 @@ type Token struct {
 }
 
 var keywords = map[string]TokenType{
-	"fn": FN,
+	"fn": Fn,
 }
 
 const (
-	ILLEGAL TokenType = "ILLEGAL"
-	EOF     TokenType = "EOF"
+	Illegal TokenType = "ILLEGAL"
+	Eof     TokenType = "EOF"
 
-	IDENT TokenType = "IDENT"
-	INT   TokenType = "INT"
+	Ident TokenType = "IDENT"
+	Int   TokenType = "INT"
 
-	SEMICOLON   = ";"
-	EQUAL       = "="
-	OPEN_PAREN  = "("
-	CLOSE_PAREN = ")"
+	Semicolon  = ";"
+	Equal      = "="
+	OpenParen  = "("
+	CloseParen = ")"
 
 	// Keywords
-	FN = "FN"
+	Fn = "FN"
 )
 
 func LookupKeyword(literal string) TokenType {
 	if value, ok := keywords[literal]; ok {
 		return value
 	}
-	return IDENT
+	return Ident
 }

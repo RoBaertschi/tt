@@ -17,7 +17,7 @@ func runLexerTest(t *testing.T, test lexerTest) {
 
 	l, err := New(test.input, "test.tt")
 	l.WithErrorCallback(func(l token.Loc, s string, a ...any) {
-		format := fmt.Sprintf(s, a)
+		format := fmt.Sprintf(s, a...)
 		t.Errorf("Lexer error callback called: %s:%d:%d %s", l.File, l.Line, l.Col, format)
 	})
 	if err != nil {
@@ -42,14 +42,14 @@ func TestBasicFunctionality(t *testing.T) {
 	runLexerTest(t, lexerTest{
 		input: "fn main() = 0;",
 		expectedToken: []token.Token{
-			{Type: token.FN, Literal: "fn"},
-			{Type: token.IDENT, Literal: "main"},
-			{Type: token.OPEN_PAREN, Literal: "("},
-			{Type: token.CLOSE_PAREN, Literal: ")"},
-			{Type: token.EQUAL, Literal: "="},
-			{Type: token.INT, Literal: "0"},
-			{Type: token.SEMICOLON, Literal: ";"},
-			{Type: token.EOF, Literal: ""},
+			{Type: token.Fn, Literal: "fn"},
+			{Type: token.Ident, Literal: "main"},
+			{Type: token.OpenParen, Literal: "("},
+			{Type: token.CloseParen, Literal: ")"},
+			{Type: token.Equal, Literal: "="},
+			{Type: token.Int, Literal: "0"},
+			{Type: token.Semicolon, Literal: ";"},
+			{Type: token.Eof, Literal: ""},
 		},
 	})
 }
