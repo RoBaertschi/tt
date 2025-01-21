@@ -19,7 +19,7 @@ func (c *Checker) error(t token.Token, format string, args ...any) error {
 	return fmt.Errorf("%s:%d:%d %s", t.Loc.File, t.Loc.Line, t.Loc.Col, fmt.Sprintf(format, args...))
 }
 
-func (c *Checker) CheckProgram(program ast.Program) (tast.Program, error) {
+func (c *Checker) CheckProgram(program *ast.Program) (*tast.Program, error) {
 	decls := []tast.Declaration{}
 	errs := []error{}
 
@@ -32,7 +32,7 @@ func (c *Checker) CheckProgram(program ast.Program) (tast.Program, error) {
 		}
 	}
 
-	return tast.Program{Declarations: decls}, errors.Join(errs...)
+	return &tast.Program{Declarations: decls}, errors.Join(errs...)
 }
 
 func (c *Checker) checkDeclaration(decl ast.Declaration) (tast.Declaration, error) {
