@@ -1,5 +1,10 @@
 package ttir
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Program struct {
 	Functions []Function
 }
@@ -7,6 +12,16 @@ type Program struct {
 type Function struct {
 	Name         string
 	Instructions []Instruction
+}
+
+func (f *Function) String() string {
+	var builder strings.Builder
+	builder.WriteString(fmt.Sprintf("fn %s\n", f.Name))
+	for _, i := range f.Instructions {
+		builder.WriteString("  ")
+		builder.WriteString(i.String())
+	}
+	return builder.String()
 }
 
 type Instruction interface {
@@ -18,7 +33,9 @@ type Ret struct {
 	op Operand
 }
 
-func (r *Ret) String()      {}
+func (r *Ret) String() string {
+	return fmt.Sprintf("ret %s\n", r.op)
+}
 func (r *Ret) instruction() {}
 
 type Operand interface {
@@ -30,4 +47,7 @@ type Constant struct {
 	Value int64
 }
 
+func (c *Constant) String() string {
+	return fmt.Sprintf("%d", c.Value)
+}
 func (c *Constant) operand() {}
