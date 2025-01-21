@@ -9,7 +9,9 @@ import (
 	"robaertschi.xyz/robaertschi/tt/token"
 )
 
-type Checker struct{}
+type Checker struct {
+	foundMain bool
+}
 
 func New() *Checker {
 	return &Checker{}
@@ -32,6 +34,11 @@ func (c *Checker) CheckProgram(program *ast.Program) (*tast.Program, error) {
 		}
 	}
 
+	if !c.foundMain {
+		// TODO: Add support for libraries
+		errs = append(errs, errors.New("no function called 'main' found"))
+	}
+
 	return &tast.Program{Declarations: decls}, errors.Join(errs...)
 }
 
@@ -42,6 +49,10 @@ func (c *Checker) checkDeclaration(decl ast.Declaration) (tast.Declaration, erro
 
 		if err != nil {
 			return nil, err
+		}
+
+		if decl.Name == "main" {
+			c.foundMain = true
 		}
 
 		return &tast.FunctionDeclaration{Token: decl.Token, Body: body, ReturnType: body.Type(), Name: decl.Name}, nil

@@ -85,7 +85,7 @@ func expectInstruction(t *testing.T, inst Instruction, actual Instruction) {
 			return
 		}
 
-		expectOperand(t, inst.op, ret.op)
+		expectOperand(t, inst.Op, ret.Op)
 	}
 }
 
@@ -116,7 +116,7 @@ func TestBasicFunction(t *testing.T) {
 					Name: "main",
 					Instructions: []Instruction{
 						&Ret{
-							op: &Constant{Value: 0},
+							Op: &Constant{Value: 0},
 						},
 					},
 				},

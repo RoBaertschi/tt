@@ -18,7 +18,7 @@ func EmitProgram(program *tast.Program) *Program {
 
 func emitFunction(function *tast.FunctionDeclaration) *Function {
 	value, instructions := emitExpression(function.Body)
-	instructions = append(instructions, &Ret{op: value})
+	instructions = append(instructions, &Ret{Op: value})
 	return &Function{
 		Name:         function.Name,
 		Instructions: instructions,

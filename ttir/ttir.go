@@ -30,11 +30,11 @@ type Instruction interface {
 }
 
 type Ret struct {
-	op Operand
+	Op Operand
 }
 
 func (r *Ret) String() string {
-	return fmt.Sprintf("ret %s\n", r.op)
+	return fmt.Sprintf("ret %s\n", r.Op)
 }
 func (r *Ret) instruction() {}
 
