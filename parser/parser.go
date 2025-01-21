@@ -51,6 +51,10 @@ func (p *Parser) WithErrorCallback(errorCallback ErrorCallback) {
 	p.errorCallback = errorCallback
 }
 
+func (p *Parser) Errors() int {
+	return p.errors
+}
+
 func (p *Parser) registerInfixFn(tt token.TokenType, infix infixParseFn) {
 	p.infixParseFns[tt] = infix
 }
