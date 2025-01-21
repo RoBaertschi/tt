@@ -15,7 +15,7 @@ func toAsmOperand(op ttir.Operand) Operand {
 	}
 }
 
-func CgProgram(prog ttir.Program) Program {
+func CgProgram(prog *ttir.Program) Program {
 	funcs := make([]Function, 0)
 
 	for _, f := range prog.Functions {

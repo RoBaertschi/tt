@@ -8,9 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"robaertschi.xyz/robaertschi/tt/asm/amd64"
 	"robaertschi.xyz/robaertschi/tt/lexer"
 	"robaertschi.xyz/robaertschi/tt/parser"
 	"robaertschi.xyz/robaertschi/tt/token"
+	"robaertschi.xyz/robaertschi/tt/ttir"
 	"robaertschi.xyz/robaertschi/tt/typechecker"
 )
 
@@ -34,6 +36,7 @@ func main() {
 	if output == "" {
 		output = strings.TrimRight(input, filepath.Ext(input))
 	}
+	asmOutputName := strings.TrimRight(input, filepath.Ext(input)) + ".asm"
 
 	file, err := os.Open(input)
 	if err != nil {
@@ -74,6 +77,24 @@ func main() {
 	tprogram, err := typechecker.New().CheckProgram(program)
 	if err != nil {
 		fmt.Printf("Typechecker failed with %e\n", err)
+		os.Exit(1)
+	}
+
+	ir := ttir.EmitProgram(tprogram)
+	asm := amd64.CgProgram(ir)
+
+	asmOutput := asm.Emit()
+
+	asmOutputFile, err := os.Open(asmOutputName)
+	if err != nil {
+		fmt.Printf("Failed to open asm file %q because: %e", asmOutputName, err)
+		os.Exit(1)
+	}
+	defer asmOutputFile.Close()
+
+	_, err = asmOutputFile.WriteString(asmOutput)
+	if err != nil {
+		fmt.Printf("Failed to write to file %q because: %e", asmOutputName, err)
 		os.Exit(1)
 	}
 }
