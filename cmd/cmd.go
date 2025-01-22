@@ -1,8 +1,7 @@
-package main
+package cmd
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -18,6 +17,14 @@ import (
 	"robaertschi.xyz/robaertschi/tt/typechecker"
 )
 
+type Arguments struct {
+	Output      string
+	Input       string
+	OnlyEmitAsm bool
+}
+
+// Prefix writer writes a prefix befor a call to an other writer
+// This Prefix is written befor each new line
 type prefixWriter struct {
 	output              io.Writer
 	outputPrefix        []byte
@@ -66,27 +73,11 @@ func (w *prefixWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
-func main() {
-	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s [flags] input\nPossible flags:\n", os.Args[0])
-		flag.PrintDefaults()
-	}
+func Compile(args Arguments) {
+	output := args.Output
+	input := args.Input
+	onlyEmitAsm := args.OnlyEmitAsm
 
-	var output string
-	flag.StringVar(&output, "o", "", "Output a executable named `file`")
-	flag.StringVar(&output, "output", "", "Output a executable named `file`")
-	onlyEmitAsm := flag.Bool("S", false, "Only emit the asembly file and exit")
-	flag.Parse()
-
-	input := flag.Arg(0)
-	if input == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	if output == "" {
-		output = strings.TrimSuffix(input, filepath.Ext(input))
-	}
 	asmOutputName := strings.TrimSuffix(input, filepath.Ext(input)) + ".asm"
 
 	file, err := os.Open(input)
@@ -158,7 +149,7 @@ func main() {
 		}
 	}
 
-	if !*onlyEmitAsm {
+	if !onlyEmitAsm {
 		args := []string{asmOutputName, output}
 		cmd := exec.Command(fasmPath, args...)
 		cmd.Stdout = NewPrefixWriterString(os.Stdout, "fasm output: ")
