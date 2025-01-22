@@ -7,6 +7,7 @@ import (
 	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/tast"
 	"robaertschi.xyz/robaertschi/tt/token"
+	"robaertschi.xyz/robaertschi/tt/types"
 )
 
 type Checker struct {
@@ -66,6 +67,20 @@ func (c *Checker) checkExpression(expr ast.Expression) (tast.Expression, error) 
 		return &tast.IntegerExpression{Token: expr.Token, Value: expr.Value}, nil
 	case *ast.ErrorExpression:
 		return nil, c.error(expr.InvalidToken, "invalid expression")
+	case *ast.BinaryExpression:
+		lhs, lhsErr := c.checkExpression(expr.Lhs)
+		rhs, rhsErr := c.checkExpression(expr.Rhs)
+		var operandErr error
+		var resultType types.Type
+		if lhsErr == nil && rhsErr == nil {
+			if !lhs.Type().IsSameType(rhs.Type()) {
+				operandErr = fmt.Errorf("the lhs of the expression does not have the same type then the rhs, lhs=%q, rhs=%q", lhs.Type(), rhs.Type())
+			} else {
+				resultType = lhs.Type()
+			}
+		}
+
+		return &tast.BinaryExpression{Lhs: lhs, Rhs: rhs, Operator: expr.Operator, Token: expr.Token, ResultType: resultType}, errors.Join(lhsErr, rhsErr, operandErr)
 	}
 	return nil, fmt.Errorf("unhandled expression in type checker")
 }

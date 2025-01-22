@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/token"
 	"robaertschi.xyz/robaertschi/tt/types"
 )
@@ -74,3 +75,19 @@ func (ie *IntegerExpression) Type() types.Type {
 }
 func (ie *IntegerExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *IntegerExpression) String() string       { return ie.Token.Literal }
+
+type BinaryExpression struct {
+	Token      token.Token // The operator
+	Lhs, Rhs   Expression
+	Operator   ast.BinaryOperator
+	ResultType types.Type
+}
+
+func (be *BinaryExpression) expressionNode() {}
+func (be *BinaryExpression) Type() types.Type {
+	return be.ResultType
+}
+func (be *BinaryExpression) TokenLiteral() string { return be.Token.Literal }
+func (be *BinaryExpression) String() string {
+	return fmt.Sprintf("%s %s %s", be.Lhs, be.Operator, be.Rhs)
+}

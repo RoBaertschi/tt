@@ -26,13 +26,17 @@ const (
 	Ident TokenType = "IDENT"
 	Int   TokenType = "INT"
 
-	Semicolon  = ";"
-	Equal      = "="
-	OpenParen  = "("
-	CloseParen = ")"
+	Semicolon  TokenType = ";"
+	Equal      TokenType = "="
+	OpenParen  TokenType = "("
+	CloseParen TokenType = ")"
+	Plus       TokenType = "+"
+	Minus      TokenType = "-"
+	Asterisk   TokenType = "*"
+	Slash      TokenType = "/"
 
 	// Keywords
-	Fn = "FN"
+	Fn TokenType = "FN"
 )
 
 func LookupKeyword(literal string) TokenType {

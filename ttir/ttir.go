@@ -3,6 +3,8 @@ package ttir
 import (
 	"fmt"
 	"strings"
+
+	"robaertschi.xyz/robaertschi/tt/ast"
 )
 
 type Program struct {
@@ -38,6 +40,18 @@ func (r *Ret) String() string {
 }
 func (r *Ret) instruction() {}
 
+type Binary struct {
+	Operator ast.BinaryOperator
+	Lhs      Operand
+	Rhs      Operand
+	Dst      Operand
+}
+
+func (b *Binary) String() string {
+	return fmt.Sprintf("%s = %s %s, %s", b.Dst, b.Operator, b.Lhs, b.Rhs)
+}
+func (b *Binary) instruction() {}
+
 type Operand interface {
 	String() string
 	operand()
@@ -51,3 +65,12 @@ func (c *Constant) String() string {
 	return fmt.Sprintf("%d", c.Value)
 }
 func (c *Constant) operand() {}
+
+type Var struct {
+	Value string
+}
+
+func (v *Var) String() string {
+	return v.Value
+}
+func (v *Var) operand() {}

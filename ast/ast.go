@@ -73,3 +73,39 @@ type IntegerExpression struct {
 func (ie *IntegerExpression) expressionNode()      {}
 func (ie *IntegerExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *IntegerExpression) String() string       { return ie.Token.Literal }
+
+//go:generate stringer -type=BinaryOperator
+type BinaryOperator int
+
+const (
+	Add BinaryOperator = iota
+	Subtract
+	Multiply
+	Divide
+)
+
+func (bo BinaryOperator) SymbolString() string {
+	switch bo {
+	case Add:
+		return "+"
+	case Subtract:
+		return "-"
+	case Multiply:
+		return "*"
+	case Divide:
+		return "/"
+	}
+	return "<INVALID BINARY OPERATOR>"
+}
+
+type BinaryExpression struct {
+	Token    token.Token // The operator
+	Lhs, Rhs Expression
+	Operator BinaryOperator
+}
+
+func (be *BinaryExpression) expressionNode()      {}
+func (be *BinaryExpression) TokenLiteral() string { return be.Token.Literal }
+func (be *BinaryExpression) String() string {
+	return fmt.Sprintf("%s %s %s", be.Lhs, be.Operator, be.Rhs)
+}

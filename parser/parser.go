@@ -12,10 +12,17 @@ import (
 type precedence int
 
 const (
-	LOWEST precedence = iota
-	SUM
-	PRODUCT
+	PrecLowest precedence = iota
+	PrecSum
+	PrecProduct
 )
+
+var precedences = map[token.TokenType]precedence{
+	token.Plus:     PrecSum,
+	token.Minus:    PrecSum,
+	token.Asterisk: PrecProduct,
+	token.Slash:    PrecProduct,
+}
 
 type ErrorCallback func(token.Token, string, ...any)
 type prefixParseFn func() ast.Expression
@@ -40,6 +47,10 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.Int, p.parseIntegerExpression)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfixFn(token.Plus, p.parseBinaryExpression)
+	p.registerInfixFn(token.Minus, p.parseBinaryExpression)
+	p.registerInfixFn(token.Asterisk, p.parseBinaryExpression)
+	p.registerInfixFn(token.Slash, p.parseBinaryExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -77,10 +88,14 @@ func (p *Parser) peekTokenIs(tt token.TokenType) bool {
 }
 
 func getPrecedence(tt token.TokenType) precedence {
-	switch tt {
-	default:
-		return LOWEST
+	if prec, ok := precedences[tt]; ok {
+		return prec
 	}
+	return PrecLowest
+}
+
+func (p *Parser) curPrecedence() precedence {
+	return getPrecedence(p.curToken.Type)
 }
 
 func (p *Parser) peekPrecedence() precedence {
@@ -161,7 +176,7 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 	}
 
 	p.nextToken()
-	expr := p.parseExpression(LOWEST)
+	expr := p.parseExpression(PrecLowest)
 	if !p.expectPeek(token.Semicolon) {
 		return nil
 	}
@@ -211,4 +226,27 @@ func (p *Parser) parseIntegerExpression() ast.Expression {
 
 	int.Value = value
 	return int
+}
+
+func (p *Parser) parseBinaryExpression(lhs ast.Expression) ast.Expression {
+	var op ast.BinaryOperator
+	switch p.curToken.Type {
+	case token.Plus:
+		op = ast.Add
+	case token.Minus:
+		op = ast.Subtract
+	case token.Asterisk:
+		op = ast.Multiply
+	case token.Slash:
+		op = ast.Divide
+	default:
+		return p.exprError(p.curToken, "invalid token for binary expression %s", p.curToken.Type)
+	}
+	tok := p.curToken
+
+	precedence := p.curPrecedence()
+	p.nextToken()
+	rhs := p.parseExpression(precedence)
+
+	return &ast.BinaryExpression{Lhs: lhs, Rhs: rhs, Operator: op, Token: tok}
 }

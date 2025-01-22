@@ -51,8 +51,12 @@ func (f *Function) Emit() string {
 type Opcode string
 
 const (
-	Mov Opcode = "mov"
-	Ret Opcode = "ret"
+	Mov   Opcode = "mov"
+	Ret   Opcode = "ret"
+	Add   Opcode = "add"
+	Sub   Opcode = "sub"
+	Imull Opcode = "imul"
+	Idiv  Opcode = "idiv"
 )
 
 type Instruction struct {
@@ -112,4 +116,10 @@ type Imm int64
 
 func (i Imm) OperandString(size OperandSize) string {
 	return fmt.Sprintf("%d", i)
+}
+
+type Stack int64
+
+func (s Stack) OperandString(size OperandSize) string {
+	return fmt.Sprintf("rbp(%d)", s)
 }
