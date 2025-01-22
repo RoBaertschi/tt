@@ -11,6 +11,14 @@ type Program struct {
 	Functions []Function
 }
 
+func (p *Program) String() string {
+	var builder strings.Builder
+	for _, f := range p.Functions {
+		builder.WriteString(f.String())
+	}
+	return builder.String()
+}
+
 type Function struct {
 	Name         string
 	Instructions []Instruction
@@ -48,7 +56,7 @@ type Binary struct {
 }
 
 func (b *Binary) String() string {
-	return fmt.Sprintf("%s = %s %s, %s", b.Dst, b.Operator, b.Lhs, b.Rhs)
+	return fmt.Sprintf("%s = %s %s, %s\n", b.Dst, b.Operator, b.Lhs, b.Rhs)
 }
 func (b *Binary) instruction() {}
 

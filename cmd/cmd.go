@@ -17,10 +17,19 @@ import (
 	"robaertschi.xyz/robaertschi/tt/typechecker"
 )
 
+type ToPrintFlags int
+
+const (
+	PrintAst ToPrintFlags = 1 << iota
+	PrintTAst
+	PrintIr
+)
+
 type Arguments struct {
 	Output      string
 	Input       string
 	OnlyEmitAsm bool
+	ToPrint     ToPrintFlags
 }
 
 // Prefix writer writes a prefix before each new line from another io.Writer
@@ -109,10 +118,12 @@ func Compile(args Arguments) {
 	})
 
 	program := p.ParseProgram()
-
 	if p.Errors() > 0 {
 		fmt.Printf("Parser encountered 1 or more errors, quiting...\n")
 		os.Exit(1)
+	}
+	if (args.ToPrint & PrintAst) != 0 {
+		fmt.Printf("AST:\n%s\n", program.String())
 	}
 
 	tprogram, err := typechecker.New().CheckProgram(program)
@@ -120,8 +131,14 @@ func Compile(args Arguments) {
 		fmt.Printf("Typechecker failed with %e\n", err)
 		os.Exit(1)
 	}
+	if (args.ToPrint & PrintTAst) != 0 {
+		fmt.Printf("TAST:\n%s\n", tprogram.String())
+	}
 
 	ir := ttir.EmitProgram(tprogram)
+	if (args.ToPrint & PrintIr) != 0 {
+		fmt.Printf("TTIR:\n%s\n", ir.String())
+	}
 	asm := amd64.CgProgram(ir)
 
 	asmOutput := asm.Emit()
