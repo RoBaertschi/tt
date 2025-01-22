@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -16,6 +18,54 @@ import (
 	"robaertschi.xyz/robaertschi/tt/typechecker"
 )
 
+type prefixWriter struct {
+	output              io.Writer
+	outputPrefix        []byte
+	outputPrefixWritten bool
+}
+
+func NewPrefixWriter(output io.Writer, prefix []byte) *prefixWriter {
+	return &prefixWriter{
+		output:       output,
+		outputPrefix: prefix,
+	}
+}
+
+func NewPrefixWriterString(output io.Writer, prefix string) *prefixWriter {
+	return &prefixWriter{
+		output:       output,
+		outputPrefix: []byte(prefix),
+	}
+}
+
+func (w *prefixWriter) Write(p []byte) (n int, err error) {
+
+	toWrites := bytes.SplitAfter(p, []byte{'\n'})
+
+	for _, toWrite := range toWrites {
+		if len(toWrite) <= 0 {
+			continue
+		}
+		if !w.outputPrefixWritten {
+			w.outputPrefixWritten = true
+			w.output.Write(w.outputPrefix)
+		}
+
+		if bytes.Contains(toWrite, []byte{'\n'}) {
+			w.outputPrefixWritten = false
+		}
+
+		var written int
+		written, err = w.output.Write(toWrite)
+		n += written
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s [flags] input\nPossible flags:\n", os.Args[0])
@@ -25,6 +75,7 @@ func main() {
 	var output string
 	flag.StringVar(&output, "o", "", "Output a executable named `file`")
 	flag.StringVar(&output, "output", "", "Output a executable named `file`")
+	onlyEmitAsm := flag.Bool("S", false, "Only emit the asembly file and exit")
 	flag.Parse()
 
 	input := flag.Arg(0)
@@ -34,9 +85,9 @@ func main() {
 	}
 
 	if output == "" {
-		output = strings.TrimRight(input, filepath.Ext(input))
+		output = strings.TrimSuffix(input, filepath.Ext(input))
 	}
-	asmOutputName := strings.TrimRight(input, filepath.Ext(input)) + ".asm"
+	asmOutputName := strings.TrimSuffix(input, filepath.Ext(input)) + ".asm"
 
 	file, err := os.Open(input)
 	if err != nil {
@@ -85,16 +136,43 @@ func main() {
 
 	asmOutput := asm.Emit()
 
-	asmOutputFile, err := os.Open(asmOutputName)
+	asmOutputFile, err := os.Create(asmOutputName)
 	if err != nil {
-		fmt.Printf("Failed to open asm file %q because: %e", asmOutputName, err)
+		fmt.Printf("Failed to create/truncate asm file %q because: %v\n", asmOutputName, err)
 		os.Exit(1)
 	}
-	defer asmOutputFile.Close()
 
 	_, err = asmOutputFile.WriteString(asmOutput)
+	asmOutputFile.Close()
 	if err != nil {
-		fmt.Printf("Failed to write to file %q because: %e", asmOutputName, err)
+		fmt.Printf("Failed to write to file %q because: %v\n", asmOutputName, err)
 		os.Exit(1)
+	}
+
+	fasmPath, err := exec.LookPath("fasm")
+	if err != nil {
+		fasmPath, err = exec.LookPath("fasm2")
+		if err != nil {
+			fmt.Printf("Could not find fasm or fasm2, please install any those two using your systems package manager or from https://flatassembler.net\n")
+			os.Exit(1)
+		}
+	}
+
+	if !*onlyEmitAsm {
+		args := []string{asmOutputName, output}
+		cmd := exec.Command(fasmPath, args...)
+		cmd.Stdout = NewPrefixWriterString(os.Stdout, "fasm output: ")
+		cmd.Stderr = cmd.Stdout
+
+		err = cmd.Run()
+		if err != nil {
+			fmt.Printf("Failed to run fasm because: %v\nCheck the asm file %q for errors and report these to the author!\n", err, asmOutputName)
+			os.Exit(1)
+		}
+
+		removeErr := os.Remove(asmOutputName)
+		if removeErr != nil {
+			fmt.Printf("Failed to remove %q file, please remove it yourself. Err: %v\n", asmOutputName, err)
+		}
 	}
 }

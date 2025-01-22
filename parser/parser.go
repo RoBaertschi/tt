@@ -66,7 +66,6 @@ func (p *Parser) registerPrefixFn(tt token.TokenType, fn prefixParseFn) {
 func (p *Parser) nextToken() {
 	p.curToken = p.peekToken
 	p.peekToken = p.l.NextToken()
-	fmt.Printf("curToken: %q, peekToken: %q\n", p.curToken.Type, p.peekToken.Type)
 }
 
 func (p *Parser) curTokenIs(tt token.TokenType) bool {

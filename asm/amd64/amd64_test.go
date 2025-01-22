@@ -22,7 +22,7 @@ func TestOperands(t *testing.T) {
 }
 
 func TestCodegen(t *testing.T) {
-	program := ttir.Program{
+	program := &ttir.Program{
 		Functions: []ttir.Function{
 			{
 				Name: "main",
