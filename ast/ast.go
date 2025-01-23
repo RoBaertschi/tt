@@ -107,5 +107,5 @@ type BinaryExpression struct {
 func (be *BinaryExpression) expressionNode()      {}
 func (be *BinaryExpression) TokenLiteral() string { return be.Token.Literal }
 func (be *BinaryExpression) String() string {
-	return fmt.Sprintf("%s %s %s", be.Lhs, be.Operator, be.Rhs)
+	return fmt.Sprintf("%s %s %s", be.Lhs, be.Operator.SymbolString(), be.Rhs)
 }
