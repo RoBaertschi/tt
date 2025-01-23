@@ -40,7 +40,7 @@ func runLexerTest(t *testing.T, test lexerTest) {
 
 func TestBasicFunctionality(t *testing.T) {
 	runLexerTest(t, lexerTest{
-		input: "fn main() = 0;",
+		input: "fn main() = 0 + 3;",
 		expectedToken: []token.Token{
 			{Type: token.Fn, Literal: "fn"},
 			{Type: token.Ident, Literal: "main"},
@@ -48,6 +48,8 @@ func TestBasicFunctionality(t *testing.T) {
 			{Type: token.CloseParen, Literal: ")"},
 			{Type: token.Equal, Literal: "="},
 			{Type: token.Int, Literal: "0"},
+			{Type: token.Plus, Literal: "+"},
+			{Type: token.Int, Literal: "3"},
 			{Type: token.Semicolon, Literal: ";"},
 			{Type: token.Eof, Literal: ""},
 		},

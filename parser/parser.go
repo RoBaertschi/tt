@@ -51,6 +51,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfixFn(token.Minus, p.parseBinaryExpression)
 	p.registerInfixFn(token.Asterisk, p.parseBinaryExpression)
 	p.registerInfixFn(token.Slash, p.parseBinaryExpression)
+	p.registerInfixFn(token.Equal, p.parseBinaryExpression)
+	p.registerInfixFn(token.NotEqual, p.parseBinaryExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -239,6 +241,10 @@ func (p *Parser) parseBinaryExpression(lhs ast.Expression) ast.Expression {
 		op = ast.Multiply
 	case token.Slash:
 		op = ast.Divide
+	case token.DoubleEqual:
+		op = ast.Equal
+	case token.NotEqual:
+		op = ast.NotEqual
 	default:
 		return p.exprError(p.curToken, "invalid token for binary expression %s", p.curToken.Type)
 	}

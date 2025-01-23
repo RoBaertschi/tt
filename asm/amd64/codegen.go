@@ -52,12 +52,12 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 	switch i := i.(type) {
 	case *ttir.Ret:
 		return []Instruction{
-			{
+			&SimpleInstruction{
 				Opcode: Mov,
 				Lhs:    AX,
 				Rhs:    toAsmOperand(i.Op),
 			},
-			{
+			&SimpleInstruction{
 				Opcode: Ret,
 			},
 		}
@@ -70,6 +70,32 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 
 func cgBinary(b *ttir.Binary) []Instruction {
 	switch b.Operator {
+	case ast.Equal, ast.NotEqual:
+		var condCode CondCode
+
+		switch b.Operator {
+		case ast.Equal:
+			condCode = Equal
+		case ast.NotEqual:
+			condCode = NotEqual
+		}
+
+		return []Instruction{
+			&SimpleInstruction{
+				Opcode: Cmp,
+				Lhs:    toAsmOperand(b.Lhs),
+				Rhs:    toAsmOperand(b.Rhs),
+			},
+			&SimpleInstruction{
+				Opcode: Mov,
+				Lhs:    toAsmOperand(b.Dst),
+				Rhs:    Imm(0),
+			},
+			&SetCCInstruction{
+				Cond: condCode,
+				Dst:  toAsmOperand(b.Dst),
+			},
+		}
 	case ast.Add, ast.Subtract, ast.Multiply:
 		var opcode Opcode
 		switch b.Operator {
@@ -82,15 +108,15 @@ func cgBinary(b *ttir.Binary) []Instruction {
 		}
 
 		return []Instruction{
-			{Opcode: Mov, Lhs: toAsmOperand(b.Dst), Rhs: toAsmOperand(b.Lhs)},
-			{Opcode: opcode, Lhs: toAsmOperand(b.Dst), Rhs: toAsmOperand(b.Rhs)},
+			&SimpleInstruction{Opcode: Mov, Lhs: toAsmOperand(b.Dst), Rhs: toAsmOperand(b.Lhs)},
+			&SimpleInstruction{Opcode: opcode, Lhs: toAsmOperand(b.Dst), Rhs: toAsmOperand(b.Rhs)},
 		}
 	case ast.Divide:
 		return []Instruction{
-			{Opcode: Mov, Lhs: Register(AX), Rhs: toAsmOperand(b.Lhs)},
-			{Opcode: Cdq},
-			{Opcode: Idiv, Lhs: toAsmOperand(b.Rhs)},
-			{Opcode: Mov, Lhs: toAsmOperand(b.Dst), Rhs: Register(AX)},
+			&SimpleInstruction{Opcode: Mov, Lhs: Register(AX), Rhs: toAsmOperand(b.Lhs)},
+			&SimpleInstruction{Opcode: Cdq},
+			&SimpleInstruction{Opcode: Idiv, Lhs: toAsmOperand(b.Rhs)},
+			&SimpleInstruction{Opcode: Mov, Lhs: toAsmOperand(b.Dst), Rhs: Register(AX)},
 		}
 	}
 
@@ -128,15 +154,26 @@ func rpFunction(f Function) Function {
 
 func rpInstruction(i Instruction, r *replacePseudoPass) Instruction {
 
-	newInstruction := Instruction{Opcode: i.Opcode}
-	if i.Lhs != nil {
-		newInstruction.Lhs = pseudoToStack(i.Lhs, r)
-	}
-	if i.Rhs != nil {
-		newInstruction.Rhs = pseudoToStack(i.Rhs, r)
+	switch i := i.(type) {
+	case *SimpleInstruction:
+
+		newInstruction := &SimpleInstruction{Opcode: i.Opcode}
+		if i.Lhs != nil {
+			newInstruction.Lhs = pseudoToStack(i.Lhs, r)
+		}
+		if i.Rhs != nil {
+			newInstruction.Rhs = pseudoToStack(i.Rhs, r)
+		}
+
+		return newInstruction
+	case *SetCCInstruction:
+		return &SetCCInstruction{
+			Cond: i.Cond,
+			Dst:  pseudoToStack(i.Dst, r),
+		}
 	}
 
-	return newInstruction
+	panic("invalid instruction")
 }
 
 func pseudoToStack(op Operand, r *replacePseudoPass) Operand {
@@ -177,40 +214,70 @@ func fixupFunction(f Function) Function {
 
 func fixupInstruction(i Instruction) []Instruction {
 
-	switch i.Opcode {
-	case Mov:
-		if lhs, ok := i.Lhs.(Stack); ok {
-			if rhs, ok := i.Rhs.(Stack); ok {
+	switch i := i.(type) {
+	case *SimpleInstruction:
+		switch i.Opcode {
+		case Mov:
+			if lhs, ok := i.Lhs.(Stack); ok {
+				if rhs, ok := i.Rhs.(Stack); ok {
+					return []Instruction{
+						&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
+						&SimpleInstruction{Opcode: Mov, Lhs: lhs, Rhs: Register(R10)},
+					}
+				}
+			}
+		case Imul:
+			if lhs, ok := i.Lhs.(Stack); ok {
 				return []Instruction{
-					{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
-					{Opcode: Mov, Lhs: lhs, Rhs: Register(R10)},
+					&SimpleInstruction{Opcode: Mov, Lhs: Register(R11), Rhs: lhs},
+					&SimpleInstruction{Opcode: Imul, Lhs: Register(R11), Rhs: i.Rhs},
+					&SimpleInstruction{Opcode: Mov, Lhs: lhs, Rhs: Register(R11)},
+				}
+			}
+			fallthrough
+		case Add, Sub, Idiv /* Imul (fallthrough) */ :
+			if lhs, ok := i.Lhs.(Stack); ok {
+				if rhs, ok := i.Rhs.(Stack); ok {
+					return []Instruction{
+						&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
+						&SimpleInstruction{Opcode: i.Opcode, Lhs: lhs, Rhs: Register(R10)},
+					}
+				}
+			} else if lhs, ok := i.Lhs.(Imm); ok && i.Opcode == Idiv {
+				return []Instruction{
+					&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: lhs},
+					&SimpleInstruction{Opcode: Idiv, Lhs: Register(R10)},
+				}
+			}
+		case Cmp:
+			if lhs, ok := i.Lhs.(Stack); ok {
+				if rhs, ok := i.Rhs.(Stack); ok {
+					return []Instruction{
+						&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
+						&SimpleInstruction{Opcode: i.Opcode, Lhs: lhs, Rhs: Register(R10)},
+					}
+				}
+			} else if rhs, ok := i.Rhs.(Imm); ok {
+				return []Instruction{
+					&SimpleInstruction{
+						Opcode: Mov,
+						Lhs:    Register(R11),
+						Rhs:    Imm(rhs),
+					},
+					&SimpleInstruction{
+						Opcode: Cmp,
+						Lhs:    i.Lhs,
+						Rhs:    Register(R11),
+					},
 				}
 			}
 		}
-	case Imul:
-		if lhs, ok := i.Lhs.(Stack); ok {
-			return []Instruction{
-				{Opcode: Mov, Lhs: Register(R11), Rhs: lhs},
-				{Opcode: Imul, Lhs: Register(R11), Rhs: i.Rhs},
-				{Opcode: Mov, Lhs: lhs, Rhs: Register(R11)},
-			}
-		}
-		fallthrough
-	case Add, Sub, Idiv /* Imul (fallthrough) */ :
-		if lhs, ok := i.Lhs.(Stack); ok {
-			if rhs, ok := i.Rhs.(Stack); ok {
-				return []Instruction{
-					{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
-					{Opcode: i.Opcode, Lhs: lhs, Rhs: Register(R10)},
-				}
-			}
-		} else if lhs, ok := i.Lhs.(Imm); ok && i.Opcode == Idiv {
-			return []Instruction{
-				{Opcode: Mov, Lhs: Register(R10), Rhs: lhs},
-				{Opcode: Idiv, Lhs: Register(R10)},
-			}
-		}
+
+		return []Instruction{i}
+	case *SetCCInstruction:
+
+		return []Instruction{i}
 	}
 
-	return []Instruction{i}
+	panic("invalid instruction")
 }

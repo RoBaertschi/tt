@@ -30,10 +30,14 @@ const (
 	Equal      TokenType = "="
 	OpenParen  TokenType = "("
 	CloseParen TokenType = ")"
-	Plus       TokenType = "+"
-	Minus      TokenType = "-"
-	Asterisk   TokenType = "*"
-	Slash      TokenType = "/"
+
+	// Binary Operators
+	Plus        TokenType = "+"
+	Minus       TokenType = "-"
+	Asterisk    TokenType = "*"
+	Slash       TokenType = "/"
+	DoubleEqual TokenType = "=="
+	NotEqual    TokenType = "!="
 
 	// Keywords
 	Fn TokenType = "FN"

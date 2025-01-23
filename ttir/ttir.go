@@ -60,6 +60,40 @@ func (b *Binary) String() string {
 }
 func (b *Binary) instruction() {}
 
+type JumpIfZero struct {
+	Value Operand
+	Label string
+}
+
+func (jiz *JumpIfZero) String() string {
+	return fmt.Sprintf("jz %v, %v\n", jiz.Value, jiz.Label)
+}
+func (jiz *JumpIfZero) instruction() {}
+
+type JumpIfNotZero struct {
+	Value Operand
+	Label string
+}
+
+func (jiz *JumpIfNotZero) String() string {
+	return fmt.Sprintf("jnz %v, %v\n", jiz.Value, jiz.Label)
+}
+func (jiz *JumpIfNotZero) instruction() {}
+
+type Jump string
+
+func (j Jump) String() string {
+	return fmt.Sprintf("jmp %v\n", string(j))
+}
+func (j Jump) instruction() {}
+
+type Label string
+
+func (l Label) String() string {
+	return fmt.Sprintf("%v:\n", string(l))
+}
+func (l Label) instruction() {}
+
 type Operand interface {
 	String() string
 	operand()

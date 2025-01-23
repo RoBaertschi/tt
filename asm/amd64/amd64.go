@@ -49,15 +49,24 @@ func (f *Function) Emit() string {
 	return builder.String()
 }
 
+type CondCode string
+
+const (
+	Equal    CondCode = "e"
+	NotEqual CondCode = "ne"
+)
+
 type Opcode string
 
 const (
 
 	// Two operands
-	Mov  Opcode = "mov" // Lhs: dst, Rhs: src, or better said intel syntax
-	Add  Opcode = "add"
-	Sub  Opcode = "sub"
-	Imul Opcode = "imul"
+	Mov   Opcode = "mov" // Lhs: dst, Rhs: src, or better said intel syntax
+	Add   Opcode = "add"
+	Sub   Opcode = "sub"
+	Imul  Opcode = "imul"
+	Cmp   Opcode = "cmp"
+	SetCC Opcode = "setcc"
 
 	// One operand
 	Idiv Opcode = "idiv"
@@ -67,7 +76,11 @@ const (
 	Cdq Opcode = "cdq"
 )
 
-type Instruction struct {
+type Instruction interface {
+	InstructionString() string
+}
+
+type SimpleInstruction struct {
 	Opcode Opcode
 	// Dst
 	Lhs Operand
@@ -75,8 +88,7 @@ type Instruction struct {
 	Rhs Operand
 }
 
-func (i *Instruction) InstructionString() string {
-
+func (i *SimpleInstruction) InstructionString() string {
 	if i.Opcode == Ret {
 		return fmt.Sprintf("mov rsp, rbp\n  pop rbp\n  ret\n")
 	}
@@ -93,6 +105,15 @@ func (i *Instruction) InstructionString() string {
 
 	// Two operands
 	return fmt.Sprintf("%s %s, %s", i.Opcode, i.Lhs.OperandString(Eight), i.Rhs.OperandString(Eight))
+}
+
+type SetCCInstruction struct {
+	Cond CondCode
+	Dst  Operand
+}
+
+func (si *SetCCInstruction) InstructionString() string {
+	return fmt.Sprintf("set%s %s", si.Cond, si.Dst.OperandString(Eight))
 }
 
 type OperandSize int

@@ -3,6 +3,7 @@ package ttir
 import (
 	"fmt"
 
+	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/tast"
 )
 
@@ -41,13 +42,15 @@ func emitExpression(expr tast.Expression) (Operand, []Instruction) {
 	case *tast.IntegerExpression:
 		return &Constant{Value: expr.Value}, []Instruction{}
 	case *tast.BinaryExpression:
-		lhsDst, instructions := emitExpression(expr.Lhs)
-		rhsDst, rhsInstructions := emitExpression(expr.Rhs)
-		instructions = append(instructions, rhsInstructions...)
-		dst := &Var{Value: temp()}
-		instructions = append(instructions, &Binary{Operator: expr.Operator, Lhs: lhsDst, Rhs: rhsDst, Dst: dst})
-		return dst, instructions
-
+		switch expr.Operator {
+		default:
+			lhsDst, instructions := emitExpression(expr.Lhs)
+			rhsDst, rhsInstructions := emitExpression(expr.Rhs)
+			instructions = append(instructions, rhsInstructions...)
+			dst := &Var{Value: temp()}
+			instructions = append(instructions, &Binary{Operator: expr.Operator, Lhs: lhsDst, Rhs: rhsDst, Dst: dst})
+			return dst, instructions
+		}
 	}
 	panic("unhandled tast.Expression case in ir emitter")
 }

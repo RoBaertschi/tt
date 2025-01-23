@@ -1,6 +1,7 @@
 package amd64
 
 import (
+	_ "embed"
 	"strings"
 	"testing"
 
@@ -20,6 +21,9 @@ func TestOperands(t *testing.T) {
 		t.Errorf("The immediate value 3 should be \"3\" but got %q", str)
 	}
 }
+
+//go:embed basic_test.txt
+var basicTest string
 
 func TestCodegen(t *testing.T) {
 	program := &ttir.Program{
@@ -55,8 +59,7 @@ func TestCodegen(t *testing.T) {
 	expectProgram(t, expectedProgram, actualProgram)
 
 	actual := actualProgram.Emit()
-
-	expected := executableAsmHeader + "main:\n  mov rax, 0\n  ret\n"
+	expected := basicTest
 	if strings.Trim(actual, " \n\t") != strings.Trim(expected, " \n\t") {
 		t.Errorf("Expected program to be:\n>>%s<<\nbut got:\n>>%s<<\n", expected, actual)
 	}
@@ -129,6 +132,26 @@ func expectOperand(t *testing.T, expected Operand, actual Operand) {
 
 		if expected != actual {
 			t.Errorf("Expected Immediate %q but got %q", expected, actual)
+		}
+	case Stack:
+		actual, ok := actual.(Stack)
+
+		if !ok {
+			t.Errorf("Expected Stack but got %T", actual)
+		}
+
+		if expected != actual {
+			t.Errorf("Expected Stack value %q but got %q", expected, actual)
+		}
+	case Pseudo:
+		actual, ok := actual.(Pseudo)
+
+		if !ok {
+			t.Errorf("Expected Stack but got %T", actual)
+		}
+
+		if expected != actual {
+			t.Errorf("Expected Stack value %q but got %q", expected, actual)
 		}
 	default:
 		t.Errorf("Unknown operand type %T", expected)

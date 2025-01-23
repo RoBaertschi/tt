@@ -82,6 +82,8 @@ const (
 	Subtract
 	Multiply
 	Divide
+	Equal
+	NotEqual
 )
 
 func (bo BinaryOperator) SymbolString() string {
@@ -94,6 +96,10 @@ func (bo BinaryOperator) SymbolString() string {
 		return "*"
 	case Divide:
 		return "/"
+	case Equal:
+		return "=="
+	case NotEqual:
+		return "!="
 	}
 	return "<INVALID BINARY OPERATOR>"
 }
