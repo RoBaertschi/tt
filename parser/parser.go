@@ -15,13 +15,16 @@ const (
 	PrecLowest precedence = iota
 	PrecSum
 	PrecProduct
+	PrecComparison
 )
 
 var precedences = map[token.TokenType]precedence{
-	token.Plus:     PrecSum,
-	token.Minus:    PrecSum,
-	token.Asterisk: PrecProduct,
-	token.Slash:    PrecProduct,
+	token.Plus:        PrecSum,
+	token.Minus:       PrecSum,
+	token.Asterisk:    PrecProduct,
+	token.Slash:       PrecProduct,
+	token.DoubleEqual: PrecComparison,
+	token.NotEqual:    PrecComparison,
 }
 
 type ErrorCallback func(token.Token, string, ...any)
@@ -51,7 +54,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfixFn(token.Minus, p.parseBinaryExpression)
 	p.registerInfixFn(token.Asterisk, p.parseBinaryExpression)
 	p.registerInfixFn(token.Slash, p.parseBinaryExpression)
-	p.registerInfixFn(token.Equal, p.parseBinaryExpression)
+	p.registerInfixFn(token.DoubleEqual, p.parseBinaryExpression)
 	p.registerInfixFn(token.NotEqual, p.parseBinaryExpression)
 
 	p.nextToken()
@@ -200,6 +203,7 @@ func (p *Parser) parseExpression(precedence precedence) ast.Expression {
 
 	for !p.peekTokenIs(token.Semicolon) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
+
 		if infix == nil {
 			return leftExpr
 		}

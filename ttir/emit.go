@@ -3,7 +3,6 @@ package ttir
 import (
 	"fmt"
 
-	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/tast"
 )
 

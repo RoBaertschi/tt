@@ -257,17 +257,17 @@ func fixupInstruction(i Instruction) []Instruction {
 						&SimpleInstruction{Opcode: i.Opcode, Lhs: lhs, Rhs: Register(R10)},
 					}
 				}
-			} else if rhs, ok := i.Rhs.(Imm); ok {
+			} else if lhs, ok := i.Lhs.(Imm); ok {
 				return []Instruction{
 					&SimpleInstruction{
 						Opcode: Mov,
 						Lhs:    Register(R11),
-						Rhs:    Imm(rhs),
+						Rhs:    Imm(lhs),
 					},
 					&SimpleInstruction{
 						Opcode: Cmp,
-						Lhs:    i.Lhs,
-						Rhs:    Register(R11),
+						Lhs:    Register(R11),
+						Rhs:    i.Lhs,
 					},
 				}
 			}

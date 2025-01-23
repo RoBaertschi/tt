@@ -42,12 +42,12 @@ func TestCodegen(t *testing.T) {
 			{
 				Name: "main",
 				Instructions: []Instruction{
-					{
+					&SimpleInstruction{
 						Opcode: Mov,
 						Lhs:    AX,
 						Rhs:    Imm(0),
 					},
-					{
+					&SimpleInstruction{
 						Opcode: Ret,
 					},
 				},
@@ -95,16 +95,38 @@ func expectFunction(t *testing.T, expected Function, actual Function) {
 
 func expectInstruction(t *testing.T, expected Instruction, actual Instruction) {
 	t.Helper()
-	if expected.Opcode != actual.Opcode {
-		t.Errorf("Expected opcode %q but got %q", expected.Opcode, actual.Opcode)
-	}
 
-	switch expected.Opcode {
-	case Mov:
-		expectOperand(t, expected.Lhs, actual.Lhs)
-		expectOperand(t, expected.Rhs, actual.Rhs)
-	case Ret:
-		// nothing to do
+	switch expected := expected.(type) {
+	case *SimpleInstruction:
+		actual, ok := actual.(*SimpleInstruction)
+		if !ok {
+			t.Errorf("Expected SimpleInstruction but got %T", actual)
+			return
+		}
+
+		if expected.Opcode != actual.Opcode {
+			t.Errorf("Expected opcode %q but got %q", expected.Opcode, actual.Opcode)
+		}
+
+		switch expected.Opcode {
+		case Mov:
+			expectOperand(t, expected.Lhs, actual.Lhs)
+			expectOperand(t, expected.Rhs, actual.Rhs)
+		case Ret:
+			// nothing to do
+		}
+	case *SetCCInstruction:
+		actual, ok := actual.(*SetCCInstruction)
+		if !ok {
+			t.Errorf("Expected SetCCInstruction but got %T", actual)
+			return
+		}
+
+		if expected.Cond != actual.Cond {
+			t.Errorf("Expected condition %q but got %q", expected.Cond, actual.Cond)
+		}
+
+		expectOperand(t, expected.Dst, actual.Dst)
 	}
 
 }

@@ -113,7 +113,7 @@ type SetCCInstruction struct {
 }
 
 func (si *SetCCInstruction) InstructionString() string {
-	return fmt.Sprintf("set%s %s", si.Cond, si.Dst.OperandString(Eight))
+	return fmt.Sprintf("set%s %s", si.Cond, si.Dst.OperandString(One))
 }
 
 type OperandSize int
