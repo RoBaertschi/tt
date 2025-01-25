@@ -58,6 +58,8 @@ type FunctionDeclaration struct {
 	ReturnType types.Type
 }
 
+var _ Declaration = &FunctionDeclaration{}
+
 func (fd *FunctionDeclaration) declarationNode()     {}
 func (fd *FunctionDeclaration) TokenLiteral() string { return fd.Token.Literal }
 func (fd *FunctionDeclaration) String() string {
@@ -69,6 +71,8 @@ type IntegerExpression struct {
 	Value int64
 }
 
+var _ Expression = &IntegerExpression{}
+
 func (ie *IntegerExpression) expressionNode() {}
 func (ie *IntegerExpression) Type() types.Type {
 	return types.I64
@@ -76,12 +80,28 @@ func (ie *IntegerExpression) Type() types.Type {
 func (ie *IntegerExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *IntegerExpression) String() string       { return ie.Token.Literal }
 
+type BooleanExpression struct {
+	Token token.Token // The token.TRUE or token.FALSE
+	Value bool
+}
+
+var _ Expression = &BooleanExpression{}
+
+func (be *BooleanExpression) expressionNode() {}
+func (ie *BooleanExpression) Type() types.Type {
+	return types.Bool
+}
+func (be *BooleanExpression) TokenLiteral() string { return be.Token.Literal }
+func (be *BooleanExpression) String() string       { return be.Token.Literal }
+
 type BinaryExpression struct {
 	Token      token.Token // The operator
 	Lhs, Rhs   Expression
 	Operator   ast.BinaryOperator
 	ResultType types.Type
 }
+
+var _ Expression = &BinaryExpression{}
 
 func (be *BinaryExpression) expressionNode() {}
 func (be *BinaryExpression) Type() types.Type {

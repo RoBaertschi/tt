@@ -48,6 +48,8 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefixFn(token.Int, p.parseIntegerExpression)
+	p.registerPrefixFn(token.True, p.parseBooleanExpression)
+	p.registerPrefixFn(token.False, p.parseBooleanExpression)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfixFn(token.Plus, p.parseBinaryExpression)
@@ -232,6 +234,23 @@ func (p *Parser) parseIntegerExpression() ast.Expression {
 
 	int.Value = value
 	return int
+}
+
+func (p *Parser) parseBooleanExpression() ast.Expression {
+	var value bool
+	switch p.curToken.Type {
+	case token.True:
+		value = true
+	case token.False:
+		value = false
+	default:
+		return p.exprError(p.curToken, "invalid token for boolean expression %s", p.curToken.Type)
+	}
+
+	return &ast.BooleanExpression{
+		Token: p.curToken,
+		Value: value,
+	}
 }
 
 func (p *Parser) parseBinaryExpression(lhs ast.Expression) ast.Expression {

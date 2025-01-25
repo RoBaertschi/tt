@@ -74,6 +74,15 @@ func (ie *IntegerExpression) expressionNode()      {}
 func (ie *IntegerExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *IntegerExpression) String() string       { return ie.Token.Literal }
 
+type BooleanExpression struct {
+	Token token.Token // The token.TRUE or token.FALSE
+	Value bool
+}
+
+func (be *BooleanExpression) expressionNode()      {}
+func (be *BooleanExpression) TokenLiteral() string { return be.Token.Literal }
+func (be *BooleanExpression) String() string       { return be.Token.Literal }
+
 //go:generate stringer -type=BinaryOperator
 type BinaryOperator int
 
@@ -85,6 +94,10 @@ const (
 	Equal
 	NotEqual
 )
+
+func (bo BinaryOperator) IsBooleanOperator() bool {
+	return bo == Equal || bo == NotEqual
+}
 
 func (bo BinaryOperator) SymbolString() string {
 	switch bo {
@@ -113,5 +126,5 @@ type BinaryExpression struct {
 func (be *BinaryExpression) expressionNode()      {}
 func (be *BinaryExpression) TokenLiteral() string { return be.Token.Literal }
 func (be *BinaryExpression) String() string {
-	return fmt.Sprintf("%s %s %s", be.Lhs, be.Operator.SymbolString(), be.Rhs)
+	return fmt.Sprintf("(%s %s %s)", be.Lhs, be.Operator.SymbolString(), be.Rhs)
 }

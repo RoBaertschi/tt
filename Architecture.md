@@ -11,3 +11,8 @@ AST --> Type Checking --> TAST --> IR Emission --> TTIR --> Codegen --> TTASM --
 
 TTIR: TT Intermediate Representation is the Representation that the AST gets turned into. This will be mostly be used for optimissing and abstracting away from Assembly
 TAST: Typed Ast
+
+## Type Checking
+Passes:
+- Type Inference
+- Type Checking

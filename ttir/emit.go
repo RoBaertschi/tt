@@ -40,6 +40,12 @@ func emitExpression(expr tast.Expression) (Operand, []Instruction) {
 	switch expr := expr.(type) {
 	case *tast.IntegerExpression:
 		return &Constant{Value: expr.Value}, []Instruction{}
+	case *tast.BooleanExpression:
+		value := int64(0)
+		if expr.Value {
+			value = 1
+		}
+		return &Constant{Value: value}, []Instruction{}
 	case *tast.BinaryExpression:
 		switch expr.Operator {
 		default:

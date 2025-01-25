@@ -16,7 +16,9 @@ type Token struct {
 }
 
 var keywords = map[string]TokenType{
-	"fn": Fn,
+	"fn":    Fn,
+	"true":  True,
+	"false": False,
 }
 
 const (
@@ -40,7 +42,9 @@ const (
 	NotEqual    TokenType = "!="
 
 	// Keywords
-	Fn TokenType = "FN"
+	Fn    TokenType = "FN"
+	True  TokenType = "TRUE"
+	False TokenType = "FALSE"
 )
 
 func LookupKeyword(literal string) TokenType {
