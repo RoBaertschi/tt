@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/lexer"
 	"robaertschi.xyz/robaertschi/tt/parser"
 	"robaertschi.xyz/robaertschi/tt/token"
@@ -86,6 +87,17 @@ func expectInstruction(t *testing.T, inst Instruction, actual Instruction) {
 		}
 
 		expectOperand(t, inst.Op, ret.Op)
+	case *Binary:
+		binary, ok := actual.(*Binary)
+
+		if !ok {
+			t.Errorf("expected inst to be %T, but got %T", inst, binary)
+			return
+		}
+
+		expectOperand(t, inst.Lhs, binary.Lhs)
+		expectOperand(t, inst.Rhs, binary.Rhs)
+		expectOperand(t, inst.Dst, binary.Dst)
 	}
 }
 
@@ -104,6 +116,16 @@ func expectOperand(t *testing.T, expected Operand, actual Operand) {
 		if expected.Value != constant.Value {
 			t.Errorf("expected *Constant.Value to be %d, but got %d", expected.Value, constant.Value)
 		}
+	case *Var:
+		v, ok := actual.(*Var)
+
+		if !ok {
+			t.Errorf("expected operand to be %T, but got %T", expected, actual)
+			return
+		}
+		if expected.Value != v.Value {
+			t.Errorf("expected var to be %q, but got %q", expected.Value, v.Value)
+		}
 	}
 }
 
@@ -120,6 +142,21 @@ func TestBasicFunction(t *testing.T) {
 						},
 					},
 				},
+			},
+		},
+	})
+}
+
+func TestBinaryExpression(t *testing.T) {
+	runTTIREmitterTest(t, ttirEmitterTest{
+		input: "fn main() = 3 + 3 + 3;",
+		expected: Program{
+			Functions: []Function{
+				{Name: "main", Instructions: []Instruction{
+					&Binary{Operator: ast.Add, Lhs: &Constant{Value: 3}, Rhs: &Constant{Value: 3}, Dst: &Var{Value: "temp.1"}},
+					&Binary{Operator: ast.Add, Lhs: &Var{Value: "temp.1"}, Rhs: &Constant{Value: 3}, Dst: &Var{Value: "temp.2"}},
+					&Ret{Op: &Var{Value: "temp.2"}},
+				}},
 			},
 		},
 	})

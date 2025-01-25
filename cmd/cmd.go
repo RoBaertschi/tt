@@ -123,7 +123,7 @@ func Compile(args Arguments) {
 		os.Exit(1)
 	}
 	if (args.ToPrint & PrintAst) != 0 {
-		fmt.Printf("AST:\n%s\n", program.String())
+		fmt.Printf("AST:\n%s\n%+#v\n", program.String(), program)
 	}
 
 	tprogram, err := typechecker.New().CheckProgram(program)
@@ -132,12 +132,12 @@ func Compile(args Arguments) {
 		os.Exit(1)
 	}
 	if (args.ToPrint & PrintTAst) != 0 {
-		fmt.Printf("TAST:\n%s\n", tprogram.String())
+		fmt.Printf("TAST:\n%s\n%+#v\n", tprogram.String(), tprogram)
 	}
 
 	ir := ttir.EmitProgram(tprogram)
 	if (args.ToPrint & PrintIr) != 0 {
-		fmt.Printf("TTIR:\n%s\n", ir.String())
+		fmt.Printf("TTIR:\n%s\n%+#v\n", ir.String(), ir)
 	}
 	asm := amd64.CgProgram(ir)
 

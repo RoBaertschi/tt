@@ -1,1 +1,1 @@
-fn main() = true != true;
+fn main() = 3 + 3;

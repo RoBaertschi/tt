@@ -87,6 +87,30 @@ func expectExpression(t *testing.T, expected ast.Expression, actual ast.Expressi
 		if integerExpr.Value != expected.Value {
 			t.Errorf("expected integer value %d, got %d", expected.Value, integerExpr.Value)
 		}
+	case *ast.BinaryExpression:
+		binaryExpr, ok := actual.(*ast.BinaryExpression)
+		if !ok {
+			t.Errorf("expected %T, got %T", expected, actual)
+			return
+		}
+
+		if binaryExpr.Operator != expected.Operator {
+			t.Errorf("expected %q operator for binary expression, got %q", expected.Operator.SymbolString(), binaryExpr.Operator.SymbolString())
+		}
+		expectExpression(t, expected.Lhs, binaryExpr.Lhs)
+		expectExpression(t, expected.Rhs, binaryExpr.Rhs)
+	case *ast.BooleanExpression:
+		booleanExpr, ok := actual.(*ast.BooleanExpression)
+		if !ok {
+			t.Errorf("expected %T, got %T", expected, actual)
+			return
+		}
+
+		if booleanExpr.Value != expected.Value {
+			t.Errorf("expected boolean %v, got %v", expected.Value, booleanExpr.Value)
+		}
+	default:
+		t.Fatalf("unknown expression type %T", expected)
 	}
 }
 
@@ -102,5 +126,29 @@ func TestFunctionDeclaration(t *testing.T) {
 			},
 		},
 	}
+	runParserTest(test, t)
+}
+
+func TestBinaryExpressions(t *testing.T) {
+	test := parserTest{
+		input: "fn main() = true == true == true;",
+		expectedProgram: ast.Program{
+			Declarations: []ast.Declaration{
+				&ast.FunctionDeclaration{
+					Name: "main",
+					Body: &ast.BinaryExpression{
+						Lhs: &ast.BinaryExpression{
+							Lhs:      &ast.BooleanExpression{Value: true},
+							Rhs:      &ast.BooleanExpression{Value: true},
+							Operator: ast.Equal,
+						},
+						Rhs:      &ast.BooleanExpression{Value: true},
+						Operator: ast.Equal,
+					},
+				},
+			},
+		},
+	}
+
 	runParserTest(test, t)
 }

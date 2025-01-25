@@ -5,65 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/ttir"
 )
-
-func TestOperands(t *testing.T) {
-	var op Operand
-
-	op = AX
-	if str := op.OperandString(One); str != "al" {
-		t.Errorf("The register AX should be \"al\" but got %q", str)
-	}
-
-	op = Imm(3)
-	if str := op.OperandString(One); str != "3" {
-		t.Errorf("The immediate value 3 should be \"3\" but got %q", str)
-	}
-}
-
-//go:embed basic_test.txt
-var basicTest string
-
-func TestCodegen(t *testing.T) {
-	program := &ttir.Program{
-		Functions: []ttir.Function{
-			{
-				Name: "main",
-				Instructions: []ttir.Instruction{
-					&ttir.Ret{Op: &ttir.Constant{Value: 0}},
-				},
-			},
-		},
-	}
-
-	expectedProgram := Program{
-		Functions: []Function{
-			{
-				Name: "main",
-				Instructions: []Instruction{
-					&SimpleInstruction{
-						Opcode: Mov,
-						Lhs:    AX,
-						Rhs:    Imm(0),
-					},
-					&SimpleInstruction{
-						Opcode: Ret,
-					},
-				},
-			},
-		},
-	}
-
-	actualProgram := CgProgram(program)
-	expectProgram(t, expectedProgram, actualProgram)
-
-	actual := actualProgram.Emit()
-	expected := basicTest
-	if strings.Trim(actual, " \n\t") != strings.Trim(expected, " \n\t") {
-		t.Errorf("Expected program to be:\n>>%s<<\nbut got:\n>>%s<<\n", expected, actual)
-	}
-}
 
 func expectProgram(t *testing.T, expected Program, actual Program) {
 	t.Helper()
@@ -177,5 +121,89 @@ func expectOperand(t *testing.T, expected Operand, actual Operand) {
 		}
 	default:
 		t.Errorf("Unknown operand type %T", expected)
+	}
+}
+
+func TestOperands(t *testing.T) {
+	var op Operand
+
+	op = AX
+	if str := op.OperandString(One); str != "al" {
+		t.Errorf("The register AX should be \"al\" but got %q", str)
+	}
+
+	op = Imm(3)
+	if str := op.OperandString(One); str != "3" {
+		t.Errorf("The immediate value 3 should be \"3\" but got %q", str)
+	}
+}
+
+//go:embed basic_test.txt
+var basicTest string
+
+func TestCodegen(t *testing.T) {
+	program := &ttir.Program{
+		Functions: []ttir.Function{
+			{
+				Name: "main",
+				Instructions: []ttir.Instruction{
+					&ttir.Ret{Op: &ttir.Constant{Value: 0}},
+				},
+			},
+		},
+	}
+
+	expectedProgram := Program{
+		Functions: []Function{
+			{
+				Name: "main",
+				Instructions: []Instruction{
+					&SimpleInstruction{
+						Opcode: Mov,
+						Lhs:    AX,
+						Rhs:    Imm(0),
+					},
+					&SimpleInstruction{
+						Opcode: Ret,
+					},
+				},
+			},
+		},
+	}
+
+	actualProgram := CgProgram(program)
+	expectProgram(t, expectedProgram, *actualProgram)
+
+	actual := actualProgram.Emit()
+	expected := basicTest
+	if strings.Trim(actual, " \n\t") != strings.Trim(expected, " \n\t") {
+		t.Errorf("Expected program to be:\n>>%s<<\nbut got:\n>>%s<<\n", expected, actual)
+	}
+}
+
+//go:embed binary_test.txt
+var binaryTest string
+
+func TestBinary(t *testing.T) {
+	program := &ttir.Program{
+		Functions: []ttir.Function{
+			{
+				Name: "main",
+				Instructions: []ttir.Instruction{
+					&ttir.Binary{
+						Lhs:      &ttir.Constant{Value: 3},
+						Rhs:      &ttir.Constant{Value: 3},
+						Operator: ast.Add,
+						Dst:      &ttir.Var{Value: "temp.1"},
+					},
+					&ttir.Ret{Op: &ttir.Var{Value: "temp.1"}},
+				},
+			},
+		},
+	}
+
+	actual := CgProgram(program).Emit()
+	if strings.Trim(actual, " \n\t") != strings.Trim(binaryTest, " \n\t") {
+		t.Errorf("Expected program to be:\n>>%s<<\nbut got:\n>>%s<<\n", binaryTest, actual)
 	}
 }
