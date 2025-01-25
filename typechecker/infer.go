@@ -36,7 +36,7 @@ func (c *Checker) CheckProgram(program *ast.Program) (*tast.Program, error) {
 	}
 
 	if !c.foundMain {
-		// TODO: Add support for libraries
+		// TODO(Robin): Add support for libraries
 		errs = append(errs, errors.New("no function called 'main' found"))
 	}
 
