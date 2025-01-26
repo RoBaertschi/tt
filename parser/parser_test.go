@@ -43,11 +43,11 @@ func runParserTest(test parserTest, t *testing.T) {
 	}
 
 	for i, decl := range test.expectedProgram.Declarations {
-		expectDeclarationSame(t, decl, actual.Declarations[i])
+		expectDeclaration(t, decl, actual.Declarations[i])
 	}
 }
 
-func expectDeclarationSame(t *testing.T, expected ast.Declaration, actual ast.Declaration) {
+func expectDeclaration(t *testing.T, expected ast.Declaration, actual ast.Declaration) {
 	t.Helper()
 
 	switch expected := expected.(type) {
@@ -67,6 +67,13 @@ func expectDeclarationSame(t *testing.T, expected ast.Declaration, actual ast.De
 
 func expectExpression(t *testing.T, expected ast.Expression, actual ast.Expression) {
 	t.Helper()
+
+	if expected == nil {
+		if actual != nil {
+			t.Errorf("expected a nil expression but got %v", actual)
+		}
+		return
+	}
 
 	switch expected := expected.(type) {
 	case *ast.ErrorExpression:
@@ -109,6 +116,21 @@ func expectExpression(t *testing.T, expected ast.Expression, actual ast.Expressi
 		if booleanExpr.Value != expected.Value {
 			t.Errorf("expected boolean %v, got %v", expected.Value, booleanExpr.Value)
 		}
+	case *ast.BlockExpression:
+		blockExpr, ok := actual.(*ast.BlockExpression)
+		if !ok {
+			t.Errorf("expected %T, got %T", expected, actual)
+			return
+		}
+
+		if len(expected.Expressions) != len(blockExpr.Expressions) {
+			t.Errorf("expected block with %d expressions, got %d", len(expected.Expressions), len(blockExpr.Expressions))
+			return
+		}
+		for i, expectedExpression := range expected.Expressions {
+			expectExpression(t, expectedExpression, blockExpr.Expressions[i])
+		}
+		expectExpression(t, expected.ReturnExpression, blockExpr.ReturnExpression)
 	default:
 		t.Fatalf("unknown expression type %T", expected)
 	}
@@ -150,5 +172,47 @@ func TestBinaryExpressions(t *testing.T) {
 		},
 	}
 
+	runParserTest(test, t)
+}
+
+func TestBlockExpression(t *testing.T) {
+	test := parserTest{
+		input: "fn main() = {\n3;\n{ 3+2 }\n}\n;",
+		expectedProgram: ast.Program{
+			Declarations: []ast.Declaration{
+				&ast.FunctionDeclaration{
+					Name: "main",
+					Body: &ast.BlockExpression{
+						Expressions: []ast.Expression{
+							&ast.IntegerExpression{Value: 3},
+						},
+						ReturnExpression: &ast.BlockExpression{
+							Expressions: []ast.Expression{},
+							ReturnExpression: &ast.BinaryExpression{
+								Lhs:      &ast.IntegerExpression{Value: 3},
+								Rhs:      &ast.IntegerExpression{Value: 2},
+								Operator: ast.Add,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	runParserTest(test, t)
+}
+
+func TestGroupedExpression(t *testing.T) {
+	test := parserTest{
+		input: "fn main() = (3);",
+		expectedProgram: ast.Program{
+			Declarations: []ast.Declaration{
+				&ast.FunctionDeclaration{
+					Name: "main",
+					Body: &ast.IntegerExpression{Value: 3},
+				},
+			},
+		},
+	}
 	runParserTest(test, t)
 }

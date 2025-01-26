@@ -13,9 +13,9 @@ type precedence int
 
 const (
 	PrecLowest precedence = iota
+	PrecComparison
 	PrecSum
 	PrecProduct
-	PrecComparison
 )
 
 var precedences = map[token.TokenType]precedence{
@@ -50,6 +50,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.Int, p.parseIntegerExpression)
 	p.registerPrefixFn(token.True, p.parseBooleanExpression)
 	p.registerPrefixFn(token.False, p.parseBooleanExpression)
+	p.registerPrefixFn(token.OpenParen, p.parseGroupedExpression)
+	p.registerPrefixFn(token.OpenBrack, p.parseBlockExpression)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfixFn(token.Plus, p.parseBinaryExpression)
@@ -128,22 +130,22 @@ func (p *Parser) exprError(invalidToken token.Token, format string, args ...any)
 	}
 }
 
-func (p *Parser) expect(tt token.TokenType) bool {
+func (p *Parser) expect(tt token.TokenType) (bool, ast.Expression) {
 	if p.curToken.Type != tt {
 		p.error(p.curToken, "expected %q, got %q", tt, p.curToken.Type)
-		return false
+		return false, &ast.ErrorExpression{InvalidToken: p.curToken}
 	}
-	return true
+	return true, nil
 }
 
-func (p *Parser) expectPeek(tt token.TokenType) bool {
+func (p *Parser) expectPeek(tt token.TokenType) (bool, ast.Expression) {
 	if p.peekToken.Type != tt {
 		p.error(p.peekToken, "expected %q, got %q", tt, p.peekToken.Type)
 		p.nextToken()
-		return false
+		return false, nil
 	}
 	p.nextToken()
-	return true
+	return true, &ast.ErrorExpression{InvalidToken: p.curToken}
 }
 
 func (p *Parser) ParseProgram() *ast.Program {
@@ -163,28 +165,28 @@ func (p *Parser) ParseProgram() *ast.Program {
 }
 
 func (p *Parser) parseDeclaration() ast.Declaration {
-	if !p.expect(token.Fn) {
+	if ok, _ := p.expect(token.Fn); !ok {
 		return nil
 	}
 	tok := p.curToken
-	if !p.expectPeek(token.Ident) {
+	if ok, _ := p.expectPeek(token.Ident); !ok {
 		return nil
 	}
 
 	name := p.curToken.Literal
-	if !p.expectPeek(token.OpenParen) {
+	if ok, _ := p.expectPeek(token.OpenParen); !ok {
 		return nil
 	}
-	if !p.expectPeek(token.CloseParen) {
+	if ok, _ := p.expectPeek(token.CloseParen); !ok {
 		return nil
 	}
-	if !p.expectPeek(token.Equal) {
+	if ok, _ := p.expectPeek(token.Equal); !ok {
 		return nil
 	}
 
 	p.nextToken()
 	expr := p.parseExpression(PrecLowest)
-	if !p.expectPeek(token.Semicolon) {
+	if ok, _ := p.expectPeek(token.Semicolon); !ok {
 		return nil
 	}
 
@@ -219,8 +221,8 @@ func (p *Parser) parseExpression(precedence precedence) ast.Expression {
 }
 
 func (p *Parser) parseIntegerExpression() ast.Expression {
-	if !p.expect(token.Int) {
-		return &ast.ErrorExpression{InvalidToken: p.curToken}
+	if ok, errExpr := p.expect(token.Int); !ok {
+		return errExpr
 	}
 
 	int := &ast.IntegerExpression{
@@ -278,4 +280,41 @@ func (p *Parser) parseBinaryExpression(lhs ast.Expression) ast.Expression {
 	rhs := p.parseExpression(precedence)
 
 	return &ast.BinaryExpression{Lhs: lhs, Rhs: rhs, Operator: op, Token: tok}
+}
+
+func (p *Parser) parseGroupedExpression() ast.Expression {
+	p.expect(token.OpenParen)
+
+	p.nextToken()
+	expr := p.parseExpression(PrecLowest)
+
+	if ok, errExpr := p.expectPeek(token.CloseParen); !ok {
+		return errExpr
+	}
+
+	return expr
+}
+
+func (p *Parser) parseBlockExpression() ast.Expression {
+	if ok, errExpr := p.expect(token.OpenBrack); !ok {
+		return errExpr
+	}
+	block := &ast.BlockExpression{Token: p.curToken}
+
+	p.nextToken()
+	for !p.curTokenIs(token.CloseBrack) {
+		expr := p.parseExpression(PrecLowest)
+		if p.peekTokenIs(token.Semicolon) {
+			block.Expressions = append(block.Expressions, expr)
+			p.nextToken()
+			p.nextToken()
+		} else if p.peekTokenIs(token.CloseBrack) {
+			block.ReturnExpression = expr
+			p.nextToken()
+		} else {
+			return p.exprError(p.peekToken, "expected a ';' or '}' to either end the current expression or block, but got %q instead.", p.peekToken.Type)
+		}
+	}
+
+	return block
 }

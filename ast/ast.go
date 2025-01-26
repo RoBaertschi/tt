@@ -128,3 +128,28 @@ func (be *BinaryExpression) TokenLiteral() string { return be.Token.Literal }
 func (be *BinaryExpression) String() string {
 	return fmt.Sprintf("(%s %s %s)", be.Lhs, be.Operator.SymbolString(), be.Rhs)
 }
+
+type BlockExpression struct {
+	Token            token.Token // The '{'
+	Expressions      []Expression
+	ReturnExpression Expression // A expression that does not end with a semicolon, there can only be one of those and it hast to be at the end
+}
+
+func (be *BlockExpression) expressionNode()      {}
+func (be *BlockExpression) TokenLiteral() string { return be.Token.Literal }
+func (be *BlockExpression) String() string {
+	var builder strings.Builder
+
+	builder.WriteString("({\n")
+	for _, expr := range be.Expressions {
+		builder.WriteString("\t")
+		builder.WriteString(expr.String())
+		builder.WriteString(";\n")
+	}
+	if be.ReturnExpression != nil {
+		builder.WriteString(fmt.Sprintf("\t%s\n", be.ReturnExpression.String()))
+	}
+	builder.WriteString("})")
+
+	return builder.String()
+}

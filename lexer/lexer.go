@@ -87,6 +87,10 @@ func (l *Lexer) NextToken() token.Token {
 		tok = l.newToken(token.Asterisk)
 	case '/':
 		tok = l.newToken(token.Slash)
+	case '{':
+		tok = l.newToken(token.OpenBrack)
+	case '}':
+		tok = l.newToken(token.CloseBrack)
 	case '!':
 		if l.peekByte() == '=' {
 			pos := l.position

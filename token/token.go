@@ -32,6 +32,8 @@ const (
 	Equal      TokenType = "="
 	OpenParen  TokenType = "("
 	CloseParen TokenType = ")"
+	OpenBrack  TokenType = "{"
+	CloseBrack TokenType = "}"
 
 	// Binary Operators
 	Plus        TokenType = "+"
