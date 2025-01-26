@@ -78,9 +78,9 @@ func (c *Checker) checkExpression(expr tast.Expression) error {
 		var operandErr error
 		if lhsErr == nil && rhsErr == nil {
 			if !expr.Lhs.Type().IsSameType(expr.Rhs.Type()) {
-				operandErr = fmt.Errorf("the lhs of the expression does not have the same type then the rhs, lhs=%q, rhs=%q", expr.Lhs.Type().Name(), expr.Rhs.Type().Name())
+				operandErr = c.error(expr.Token, "the lhs of the expression does not have the same type then the rhs, lhs=%q, rhs=%q", expr.Lhs.Type().Name(), expr.Rhs.Type().Name())
 			} else if !expr.Lhs.Type().SupportsBinaryOperator(expr.Operator) {
-				operandErr = fmt.Errorf("the operator %q is not supported by the type %q", expr.Operator, expr.Lhs.Type().Name())
+				operandErr = c.error(expr.Token, "the operator %q is not supported by the type %q", expr.Operator, expr.Lhs.Type().Name())
 			}
 		}
 

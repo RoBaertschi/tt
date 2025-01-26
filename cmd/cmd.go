@@ -128,7 +128,7 @@ func Compile(args Arguments) {
 
 	tprogram, err := typechecker.New().CheckProgram(program)
 	if err != nil {
-		fmt.Printf("Typechecker failed with: %v\n", err)
+		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 	if (args.ToPrint & PrintTAst) != 0 {
