@@ -32,6 +32,12 @@ func CgProgram(prog *ttir.Program) *Program {
 	newProgram = replacePseudo(newProgram)
 	newProgram = instructionFixup(newProgram)
 
+	for i, f := range newProgram.Functions {
+		if f.Name == "main" {
+			newProgram.MainFunction = &newProgram.Functions[i]
+		}
+	}
+
 	return &newProgram
 }
 
@@ -43,23 +49,28 @@ func cgFunction(f ttir.Function) Function {
 	}
 
 	return Function{
-		Name:         f.Name,
-		Instructions: newInstructions,
+		Name:           f.Name,
+		Instructions:   newInstructions,
+		HasReturnValue: f.HasReturnValue,
 	}
 }
 
 func cgInstruction(i ttir.Instruction) []Instruction {
 	switch i := i.(type) {
 	case *ttir.Ret:
-		return []Instruction{
-			&SimpleInstruction{
-				Opcode: Mov,
-				Lhs:    AX,
-				Rhs:    toAsmOperand(i.Op),
-			},
-			&SimpleInstruction{
-				Opcode: Ret,
-			},
+		if i.Op != nil {
+			return []Instruction{
+				&SimpleInstruction{
+					Opcode: Mov,
+					Lhs:    AX,
+					Rhs:    toAsmOperand(i.Op),
+				},
+				&SimpleInstruction{
+					Opcode: Ret,
+				},
+			}
+		} else {
+			return []Instruction{&SimpleInstruction{Opcode: Ret}}
 		}
 	case *ttir.Binary:
 		return cgBinary(i)
@@ -149,7 +160,7 @@ func rpFunction(f Function) Function {
 		newInstructions = append(newInstructions, rpInstruction(i, r))
 	}
 
-	return Function{Instructions: newInstructions, Name: f.Name, StackOffset: r.currentOffset}
+	return Function{Instructions: newInstructions, Name: f.Name, StackOffset: r.currentOffset, HasReturnValue: f.HasReturnValue}
 }
 
 func rpInstruction(i Instruction, r *replacePseudoPass) Instruction {
@@ -209,7 +220,7 @@ func fixupFunction(f Function) Function {
 		newInstructions = append(newInstructions, fixupInstruction(i)...)
 	}
 
-	return Function{Name: f.Name, Instructions: newInstructions, StackOffset: f.StackOffset}
+	return Function{Name: f.Name, Instructions: newInstructions, StackOffset: f.StackOffset, HasReturnValue: f.HasReturnValue}
 }
 
 func fixupInstruction(i Instruction) []Instruction {

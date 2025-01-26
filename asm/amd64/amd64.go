@@ -6,7 +6,16 @@ import (
 )
 
 type Program struct {
-	Functions []Function
+	Functions    []Function
+	MainFunction *Function
+}
+
+func (p *Program) executableAsmHeader() string {
+
+	if p.MainFunction.HasReturnValue {
+		return executableAsmHeader
+	}
+	return executableAsmHeaderNoReturnValue
 }
 
 // This calls the main function and uses it's return value to exit
@@ -19,9 +28,18 @@ const executableAsmHeader = "format ELF64 executable\n" +
 	"  mov rax, 60\n" +
 	"  syscall\n"
 
+const executableAsmHeaderNoReturnValue = "format ELF64 executable\n" +
+	"segment readable executable\n" +
+	"entry _start\n" +
+	"_start:\n" +
+	"  call main\n" +
+	"  mov rdi, 0\n" +
+	"  mov rax, 60\n" +
+	"  syscall\n"
+
 func (p *Program) Emit() string {
 	var builder strings.Builder
-	builder.WriteString(executableAsmHeader)
+	builder.WriteString(p.executableAsmHeader())
 
 	for _, function := range p.Functions {
 		builder.WriteString(function.Emit())
@@ -32,9 +50,10 @@ func (p *Program) Emit() string {
 }
 
 type Function struct {
-	StackOffset  int64
-	Name         string
-	Instructions []Instruction
+	StackOffset    int64
+	Name           string
+	HasReturnValue bool
+	Instructions   []Instruction
 }
 
 func (f *Function) Emit() string {

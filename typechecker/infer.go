@@ -60,6 +60,39 @@ func (c *Checker) inferExpression(expr ast.Expression) (tast.Expression, error) 
 		}
 
 		return &tast.BinaryExpression{Lhs: lhs, Rhs: rhs, Operator: expr.Operator, Token: expr.Token, ResultType: resultType}, errors.Join(lhsErr, rhsErr)
+	case *ast.BlockExpression:
+		expressions := []tast.Expression{}
+		errs := []error{}
+
+		for _, expr := range expr.Expressions {
+			newExpr, err := c.inferExpression(expr)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				expressions = append(expressions, newExpr)
+			}
+		}
+
+		var returnExpr tast.Expression
+		var returnType types.Type
+		if expr.ReturnExpression != nil {
+			expr, err := c.inferExpression(expr.ReturnExpression)
+			returnExpr = expr
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				returnType = returnExpr.Type()
+			}
+		} else {
+			returnType = types.Unit
+		}
+
+		return &tast.BlockExpression{
+			Token:            expr.Token,
+			Expressions:      expressions,
+			ReturnType:       returnType,
+			ReturnExpression: returnExpr,
+		}, errors.Join(errs...)
 	}
 	return nil, fmt.Errorf("unhandled expression in type inferer")
 }

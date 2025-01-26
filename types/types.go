@@ -15,11 +15,13 @@ type TypeId struct {
 }
 
 const (
-	I64Id int64 = iota
+	UnitId int64 = iota
+	I64Id
 	BoolId
 )
 
 var (
+	Unit = New(UnitId, "()")
 	I64  = New(I64Id, "i64")
 	Bool = New(BoolId, "bool")
 )

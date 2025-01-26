@@ -85,6 +85,16 @@ func (c *Checker) checkExpression(expr tast.Expression) error {
 		}
 
 		return errors.Join(lhsErr, rhsErr, operandErr)
+	case *tast.BlockExpression:
+		errs := []error{}
+
+		for _, expr := range expr.Expressions {
+			errs = append(errs, c.checkExpression(expr))
+		}
+		if expr.ReturnExpression != nil {
+			errs = append(errs, c.checkExpression(expr.ReturnExpression))
+		}
+		return errors.Join(errs...)
 	}
-	return fmt.Errorf("unhandled expression in type checker")
+	return fmt.Errorf("unhandled expression %T in type checker", expr)
 }

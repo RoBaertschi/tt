@@ -20,8 +20,9 @@ func (p *Program) String() string {
 }
 
 type Function struct {
-	Name         string
-	Instructions []Instruction
+	Name           string
+	Instructions   []Instruction
+	HasReturnValue bool
 }
 
 func (f *Function) String() string {
@@ -40,11 +41,16 @@ type Instruction interface {
 }
 
 type Ret struct {
+	// Nullable, if it does not return anything
 	Op Operand
 }
 
 func (r *Ret) String() string {
-	return fmt.Sprintf("ret %s\n", r.Op)
+	if r.Op != nil {
+		return fmt.Sprintf("ret %s\n", r.Op)
+	} else {
+		return "ret\n"
+	}
 }
 func (r *Ret) instruction() {}
 

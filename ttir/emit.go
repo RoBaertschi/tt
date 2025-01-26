@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"robaertschi.xyz/robaertschi/tt/tast"
+	"robaertschi.xyz/robaertschi/tt/types"
 )
 
 var uniqueId int64
@@ -31,8 +32,9 @@ func emitFunction(function *tast.FunctionDeclaration) *Function {
 	value, instructions := emitExpression(function.Body)
 	instructions = append(instructions, &Ret{Op: value})
 	return &Function{
-		Name:         function.Name,
-		Instructions: instructions,
+		Name:           function.Name,
+		Instructions:   instructions,
+		HasReturnValue: !function.ReturnType.IsSameType(types.Unit),
 	}
 }
 
@@ -56,6 +58,22 @@ func emitExpression(expr tast.Expression) (Operand, []Instruction) {
 			instructions = append(instructions, &Binary{Operator: expr.Operator, Lhs: lhsDst, Rhs: rhsDst, Dst: dst})
 			return dst, instructions
 		}
+	case *tast.BlockExpression:
+		instructions := []Instruction{}
+
+		for _, expr := range expr.Expressions {
+			_, insts := emitExpression(expr)
+			instructions = append(instructions, insts...)
+		}
+
+		var value Operand
+		if expr.ReturnExpression != nil {
+			dst, insts := emitExpression(expr.ReturnExpression)
+			value = dst
+			instructions = append(instructions, insts...)
+		}
+
+		return value, instructions
 	}
 	panic("unhandled tast.Expression case in ir emitter")
 }
