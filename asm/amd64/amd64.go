@@ -71,8 +71,12 @@ func (f *Function) Emit() string {
 type CondCode string
 
 const (
-	Equal    CondCode = "e"
-	NotEqual CondCode = "ne"
+	Equal        CondCode = "e"
+	NotEqual     CondCode = "ne"
+	Greater      CondCode = "g"
+	GreaterEqual CondCode = "ge"
+	Less         CondCode = "l"
+	LessEqual    CondCode = "le"
 )
 
 type Opcode string

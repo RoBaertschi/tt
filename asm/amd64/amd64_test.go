@@ -124,6 +124,10 @@ func expectOperand(t *testing.T, expected Operand, actual Operand) {
 	}
 }
 
+func trim(s string) string {
+	return strings.Trim(s, " \n\t")
+}
+
 func TestOperands(t *testing.T) {
 	var op Operand
 
@@ -145,7 +149,8 @@ func TestCodegen(t *testing.T) {
 	program := &ttir.Program{
 		Functions: []ttir.Function{
 			{
-				Name: "main",
+				Name:           "main",
+				HasReturnValue: true,
 				Instructions: []ttir.Instruction{
 					&ttir.Ret{Op: &ttir.Constant{Value: 0}},
 				},
@@ -154,6 +159,7 @@ func TestCodegen(t *testing.T) {
 	}
 
 	expectedProgram := Program{
+
 		Functions: []Function{
 			{
 				Name: "main",
@@ -167,6 +173,7 @@ func TestCodegen(t *testing.T) {
 						Opcode: Ret,
 					},
 				},
+				HasReturnValue: true,
 			},
 		},
 	}
@@ -176,8 +183,8 @@ func TestCodegen(t *testing.T) {
 
 	actual := actualProgram.Emit()
 	expected := basicTest
-	if strings.Trim(actual, " \n\t") != strings.Trim(expected, " \n\t") {
-		t.Errorf("Expected program to be:\n>>%s<<\nbut got:\n>>%s<<\n", expected, actual)
+	if trim(actual) != trim(expected) {
+		t.Errorf("Expected program to be:\n>>%s<<\nbut got:\n>>%s<<\n", trim(expected), trim(actual))
 	}
 }
 
@@ -198,12 +205,63 @@ func TestBinary(t *testing.T) {
 					},
 					&ttir.Ret{Op: &ttir.Var{Value: "temp.1"}},
 				},
+				HasReturnValue: true,
 			},
 		},
 	}
 
 	actual := CgProgram(program).Emit()
-	if strings.Trim(actual, " \n\t") != strings.Trim(binaryTest, " \n\t") {
-		t.Errorf("Expected program to be:\n>>%s<<\nbut got:\n>>%s<<\n", binaryTest, actual)
+	if trim(actual) != trim(binaryTest) {
+		t.Errorf("Expected program to be:\n>>%s<<\nbut got:\n>>%s<<\n", trim(binaryTest), trim(actual))
+	}
+}
+
+//go:embed equality_test.txt
+var equalityTest string
+
+// There was once a bug with how the cmp instructions were generated, this check should fail if it happens again
+func TestEqualityOperators(t *testing.T) {
+	program := ttir.Program{
+		Functions: []ttir.Function{
+			{
+				Name:           "main",
+				HasReturnValue: false,
+				Instructions: []ttir.Instruction{
+					&ttir.Binary{
+						Lhs:      &ttir.Constant{Value: 5},
+						Rhs:      &ttir.Constant{Value: 4},
+						Dst:      &ttir.Var{Value: "temp.1"},
+						Operator: ast.LessThanEqual,
+					},
+					&ttir.Binary{
+						Lhs:      &ttir.Constant{Value: 5},
+						Rhs:      &ttir.Constant{Value: 4},
+						Dst:      &ttir.Var{Value: "temp.2"},
+						Operator: ast.LessThan,
+					},
+					&ttir.Binary{
+						Lhs:      &ttir.Constant{Value: 5},
+						Rhs:      &ttir.Constant{Value: 4},
+						Dst:      &ttir.Var{Value: "temp.3"},
+						Operator: ast.GreaterThanEqual,
+					},
+					&ttir.Binary{
+						Lhs:      &ttir.Constant{Value: 5},
+						Rhs:      &ttir.Constant{Value: 4},
+						Dst:      &ttir.Var{Value: "temp.4"},
+						Operator: ast.GreaterThan,
+					},
+					&ttir.Ret{},
+				},
+			},
+		},
+	}
+
+	actual := CgProgram(&program).Emit()
+	actualTrimmed := trim(actual)
+	expectedTrimmed := trim(actualTrimmed)
+
+	if expectedTrimmed != actualTrimmed {
+		t.Errorf("Expected program to be:\n>>%s<<\nbut got:\n>>%s<<\n", expectedTrimmed, actualTrimmed)
 	}
 }

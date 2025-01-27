@@ -75,6 +75,26 @@ func (l *Lexer) NextToken() token.Token {
 			return tok
 		}
 		tok = l.newToken(token.Equal)
+	case '<':
+		if l.peekByte() == '=' {
+			pos := l.position
+			l.readChar()
+			l.readChar()
+			tok.Type = token.LessThanEqual
+			tok.Literal = l.input[pos:l.position]
+			return tok
+		}
+		tok = l.newToken(token.LessThan)
+	case '>':
+		if l.peekByte() == '=' {
+			pos := l.position
+			l.readChar()
+			l.readChar()
+			tok.Type = token.GreaterThanEqual
+			tok.Literal = l.input[pos:l.position]
+			return tok
+		}
+		tok = l.newToken(token.GreaterThan)
 	case '(':
 		tok = l.newToken(token.OpenParen)
 	case ')':

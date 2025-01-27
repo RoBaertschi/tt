@@ -1,0 +1,33 @@
+format ELF64 executable
+segment readable executable
+entry _start
+_start:
+  call main
+  mov rdi, 0
+  mov rax, 60
+  syscall
+main:
+  push rbp
+  mov rbp, rsp
+  add rsp, -16
+  mov r11, 5
+  cmp r11, 4
+  mov qword [rsp -4], 0
+  setle byte [rsp -4]
+  mov r11, 5
+  cmp r11, 4
+  mov qword [rsp -8], 0
+  setl byte [rsp -8]
+  mov r11, 5
+  cmp r11, 4
+  mov qword [rsp -12], 0
+  setge byte [rsp -12]
+  mov r11, 5
+  cmp r11, 4
+  mov qword [rsp -16], 0
+  setg byte [rsp -16]
+  mov rsp, rbp
+  pop rbp
+  ret
+
+

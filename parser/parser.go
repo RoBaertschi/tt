@@ -19,12 +19,16 @@ const (
 )
 
 var precedences = map[token.TokenType]precedence{
-	token.Plus:        PrecSum,
-	token.Minus:       PrecSum,
-	token.Asterisk:    PrecProduct,
-	token.Slash:       PrecProduct,
-	token.DoubleEqual: PrecComparison,
-	token.NotEqual:    PrecComparison,
+	token.Plus:             PrecSum,
+	token.Minus:            PrecSum,
+	token.Asterisk:         PrecProduct,
+	token.Slash:            PrecProduct,
+	token.DoubleEqual:      PrecComparison,
+	token.NotEqual:         PrecComparison,
+	token.GreaterThan:      PrecComparison,
+	token.GreaterThanEqual: PrecComparison,
+	token.LessThan:         PrecComparison,
+	token.LessThanEqual:    PrecComparison,
 }
 
 type ErrorCallback func(token.Token, string, ...any)
@@ -60,6 +64,10 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfixFn(token.Slash, p.parseBinaryExpression)
 	p.registerInfixFn(token.DoubleEqual, p.parseBinaryExpression)
 	p.registerInfixFn(token.NotEqual, p.parseBinaryExpression)
+	p.registerInfixFn(token.GreaterThan, p.parseBinaryExpression)
+	p.registerInfixFn(token.GreaterThanEqual, p.parseBinaryExpression)
+	p.registerInfixFn(token.LessThan, p.parseBinaryExpression)
+	p.registerInfixFn(token.LessThanEqual, p.parseBinaryExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -270,6 +278,14 @@ func (p *Parser) parseBinaryExpression(lhs ast.Expression) ast.Expression {
 		op = ast.Equal
 	case token.NotEqual:
 		op = ast.NotEqual
+	case token.LessThan:
+		op = ast.LessThan
+	case token.LessThanEqual:
+		op = ast.LessThanEqual
+	case token.GreaterThan:
+		op = ast.GreaterThan
+	case token.GreaterThanEqual:
+		op = ast.GreaterThanEqual
 	default:
 		return p.exprError(p.curToken, "invalid token for binary expression %s", p.curToken.Type)
 	}

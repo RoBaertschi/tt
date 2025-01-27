@@ -36,12 +36,16 @@ const (
 	CloseBrack TokenType = "}"
 
 	// Binary Operators
-	Plus        TokenType = "+"
-	Minus       TokenType = "-"
-	Asterisk    TokenType = "*"
-	Slash       TokenType = "/"
-	DoubleEqual TokenType = "=="
-	NotEqual    TokenType = "!="
+	Plus             TokenType = "+"
+	Minus            TokenType = "-"
+	Asterisk         TokenType = "*"
+	Slash            TokenType = "/"
+	DoubleEqual      TokenType = "=="
+	NotEqual         TokenType = "!="
+	LessThan         TokenType = "<"
+	LessThanEqual    TokenType = "<="
+	GreaterThan      TokenType = ">"
+	GreaterThanEqual TokenType = ">="
 
 	// Keywords
 	Fn    TokenType = "FN"

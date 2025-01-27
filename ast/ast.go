@@ -93,10 +93,14 @@ const (
 	Divide
 	Equal
 	NotEqual
+	LessThan
+	LessThanEqual
+	GreaterThan
+	GreaterThanEqual
 )
 
 func (bo BinaryOperator) IsBooleanOperator() bool {
-	return bo == Equal || bo == NotEqual
+	return bo == Equal || bo == NotEqual || bo == LessThan || bo == LessThanEqual || bo == GreaterThan || bo == GreaterThanEqual
 }
 
 func (bo BinaryOperator) SymbolString() string {
@@ -113,6 +117,14 @@ func (bo BinaryOperator) SymbolString() string {
 		return "=="
 	case NotEqual:
 		return "!="
+	case LessThan:
+		return "<"
+	case LessThanEqual:
+		return "<="
+	case GreaterThan:
+		return ">"
+	case GreaterThanEqual:
+		return ">="
 	}
 	return "<INVALID BINARY OPERATOR>"
 }

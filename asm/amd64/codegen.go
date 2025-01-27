@@ -81,7 +81,7 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 
 func cgBinary(b *ttir.Binary) []Instruction {
 	switch b.Operator {
-	case ast.Equal, ast.NotEqual:
+	case ast.Equal, ast.NotEqual, ast.GreaterThan, ast.GreaterThanEqual, ast.LessThan, ast.LessThanEqual:
 		var condCode CondCode
 
 		switch b.Operator {
@@ -89,6 +89,14 @@ func cgBinary(b *ttir.Binary) []Instruction {
 			condCode = Equal
 		case ast.NotEqual:
 			condCode = NotEqual
+		case ast.GreaterThan:
+			condCode = Greater
+		case ast.GreaterThanEqual:
+			condCode = GreaterEqual
+		case ast.LessThan:
+			condCode = Less
+		case ast.LessThanEqual:
+			condCode = LessEqual
 		}
 
 		return []Instruction{
@@ -278,7 +286,7 @@ func fixupInstruction(i Instruction) []Instruction {
 					&SimpleInstruction{
 						Opcode: Cmp,
 						Lhs:    Register(R11),
-						Rhs:    i.Lhs,
+						Rhs:    i.Rhs,
 					},
 				}
 			}
