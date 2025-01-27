@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"robaertschi.xyz/robaertschi/tt/token"
 	"robaertschi.xyz/robaertschi/tt/ttir"
 	"robaertschi.xyz/robaertschi/tt/typechecker"
+	"robaertschi.xyz/robaertschi/tt/utils"
 )
 
 type ToPrintFlags int
@@ -30,55 +30,6 @@ type Arguments struct {
 	Input       string
 	OnlyEmitAsm bool
 	ToPrint     ToPrintFlags
-}
-
-// Prefix writer writes a prefix before each new line from another io.Writer
-type PrefixWriter struct {
-	output              io.Writer
-	outputPrefix        []byte
-	outputPrefixWritten bool
-}
-
-func NewPrefixWriter(output io.Writer, prefix []byte) *PrefixWriter {
-	return &PrefixWriter{
-		output:       output,
-		outputPrefix: prefix,
-	}
-}
-
-func NewPrefixWriterString(output io.Writer, prefix string) *PrefixWriter {
-	return &PrefixWriter{
-		output:       output,
-		outputPrefix: []byte(prefix),
-	}
-}
-
-func (w *PrefixWriter) Write(p []byte) (n int, err error) {
-
-	toWrites := bytes.SplitAfter(p, []byte{'\n'})
-
-	for _, toWrite := range toWrites {
-		if len(toWrite) <= 0 {
-			continue
-		}
-		if !w.outputPrefixWritten {
-			w.outputPrefixWritten = true
-			w.output.Write(w.outputPrefix)
-		}
-
-		if bytes.Contains(toWrite, []byte{'\n'}) {
-			w.outputPrefixWritten = false
-		}
-
-		var written int
-		written, err = w.output.Write(toWrite)
-		n += written
-		if err != nil {
-			return
-		}
-	}
-
-	return
 }
 
 func Compile(args Arguments) {
@@ -168,7 +119,7 @@ func Compile(args Arguments) {
 	if !onlyEmitAsm {
 		args := []string{asmOutputName, output}
 		cmd := exec.Command(fasmPath, args...)
-		cmd.Stdout = NewPrefixWriterString(os.Stdout, "fasm output: ")
+		cmd.Stdout = utils.NewPrefixWriterString(os.Stdout, "fasm output: ")
 		cmd.Stderr = cmd.Stdout
 
 		err = cmd.Run()
