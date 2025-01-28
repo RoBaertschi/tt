@@ -3,11 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"robaertschi.xyz/robaertschi/tt/cmd"
+	"robaertschi.xyz/robaertschi/tt/asm"
+	"robaertschi.xyz/robaertschi/tt/build"
 )
 
 func main() {
@@ -19,7 +21,7 @@ func main() {
 	var output string
 	flag.StringVar(&output, "o", "", "Output a executable named `file`")
 	flag.StringVar(&output, "output", "", "Output a executable named `file`")
-	onlyEmitAsm := flag.Bool("S", false, "Only emit the asembly file and exit")
+	emitAsmOnly := flag.Bool("S", false, "Only emit the asembly file and exit")
 
 	printAst := flag.Bool("ast", false, "Print the AST out to stdout")
 	printTAst := flag.Bool("tast", false, "Print the typed AST out to stdout")
@@ -36,16 +38,22 @@ func main() {
 		output = strings.TrimSuffix(input, filepath.Ext(input))
 	}
 
-	var toPrint cmd.ToPrintFlags
+	var toPrint build.ToPrintFlags
 	if *printAst {
-		toPrint |= cmd.PrintAst
+		toPrint |= build.PrintAst
 	}
 	if *printTAst {
-		toPrint |= cmd.PrintTAst
+		toPrint |= build.PrintTAst
 	}
 	if *printIr {
-		toPrint |= cmd.PrintIr
+		toPrint |= build.PrintIr
 	}
 
-	cmd.Compile(cmd.Arguments{Output: output, Input: input, OnlyEmitAsm: *onlyEmitAsm, ToPrint: toPrint})
+	logger := log.New(os.Stderr, "", log.Lshortfile)
+
+	err := build.NewSourceProgram(input, output).Build(asm.Fasm, *emitAsmOnly, build.ToPrintFlags(toPrint))
+	if err != nil {
+		logger.Fatalln(err)
+		os.Exit(1)
+	}
 }
