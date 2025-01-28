@@ -3,13 +3,14 @@ package build
 
 import (
 	"fmt"
-	"log"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"robaertschi.xyz/robaertschi/tt/asm"
+	"robaertschi.xyz/robaertschi/tt/utils"
 )
 
 type ToPrintFlags int
@@ -38,14 +39,14 @@ func NewSourceProgram(inputFile string, outputFile string) *SourceProgram {
 }
 
 func (sp *SourceProgram) Build(backend asm.Backend, emitAsmOnly bool, toPrint ToPrintFlags) error {
-	l := log.New(os.Stderr, "[build] ", log.Lshortfile)
+	l := utils.NewLogger(os.Stderr, "[build] ", utils.Info)
 
 	nodes := make(map[int]*node)
 	rootNodes := []int{}
 	id := 0
 
 	addRootNode := func(task task) int {
-		l.Printf("registering root task %d", id)
+		l.Debugf("registering root task %d", id)
 		node := &node{task: task}
 		nodes[id] = node
 		rootNodes = append(rootNodes, id)
@@ -54,7 +55,7 @@ func (sp *SourceProgram) Build(backend asm.Backend, emitAsmOnly bool, toPrint To
 	}
 
 	addNode := func(task task, deps ...int) int {
-		l.Printf("registering task %d", id)
+		l.Debugf("registering task %d", id)
 		if len(deps) <= 0 {
 			panic("node without dep is useless")
 		}
@@ -91,12 +92,14 @@ func (sp *SourceProgram) buildFasm(addRootNode func(task) int, addNode func(task
 
 	mainAsmOutput := strings.TrimSuffix(sp.InputFile, filepath.Ext(sp.InputFile)) + ".asm"
 
-	asmFile := addRootNode(NewFuncTask(func() error {
-		return build(sp.InputFile, mainAsmOutput, toPrint)
+	asmFile := addRootNode(NewFuncTask("generating assembly for "+sp.InputFile, func(output io.Writer) error {
+		return build(output, sp.InputFile, mainAsmOutput, toPrint)
 	}))
 
 	if !emitAsmOnly {
-		fasmTask := addNode(NewProcessTask(fasmPath, mainAsmOutput, sp.OutputFile), asmFile)
+		task := NewProcessTask(fasmPath, mainAsmOutput, sp.OutputFile)
+		task.WithName("assembling " + mainAsmOutput)
+		fasmTask := addNode(task, asmFile)
 
 		// Cleanup
 

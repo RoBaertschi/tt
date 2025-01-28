@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"slices"
+	"strings"
 
 	"robaertschi.xyz/robaertschi/tt/asm/amd64"
 	"robaertschi.xyz/robaertschi/tt/lexer"
@@ -19,27 +19,35 @@ import (
 )
 
 type task interface {
-	Run(id int, doneChan chan taskResult)
+	Run(id int, output io.Writer, doneChan chan taskResult)
+	Name() string
+	WithName(string)
 }
 
 type processTask struct {
-	name string
-	args []string
+	taskName string
+	name     string
+	args     []string
 }
 
 func NewProcessTask(name string, args ...string) task {
 	return &processTask{
-		name: name,
-		args: args,
+		taskName: name,
+		name:     name,
+		args:     args,
 	}
 }
 
-func (pt *processTask) Run(id int, doneChan chan taskResult) {
+func (pt *processTask) WithName(name string) {
+	pt.taskName = name
+}
+
+func (pt *processTask) Run(id int, output io.Writer, doneChan chan taskResult) {
 	cmd := exec.Command(pt.name, pt.args...)
-	cmd.Stdout = utils.NewPrefixWriterString(os.Stdout, pt.name+" output: ")
+	cmd.Stdout = utils.NewPrefixWriterString(output, pt.name+" output: ")
 	cmd.Stderr = cmd.Stdout
 
-	fmt.Printf("starting %q %v\n", pt.name, pt.args)
+	io.WriteString(output, fmt.Sprintf("starting %q %v\n", pt.name, pt.args))
 	err := cmd.Run()
 	var exitError error
 	if cmd.ProcessState.ExitCode() != 0 {
@@ -51,15 +59,20 @@ func (pt *processTask) Run(id int, doneChan chan taskResult) {
 	}
 }
 
+func (pt *processTask) Name() string {
+	return pt.taskName
+}
+
 type removeFileTask struct {
 	file string
+	name string
 }
 
 func NewRemoveFileTask(file string) task {
-	return &removeFileTask{file: file}
+	return &removeFileTask{file: file, name: fmt.Sprintf("removing file %q", file)}
 }
 
-func (rft *removeFileTask) Run(id int, doneChan chan taskResult) {
+func (rft *removeFileTask) Run(id int, output io.Writer, doneChan chan taskResult) {
 	err := os.Remove(rft.file)
 	doneChan <- taskResult{
 		Id:  id,
@@ -67,22 +80,35 @@ func (rft *removeFileTask) Run(id int, doneChan chan taskResult) {
 	}
 }
 
+func (rft *removeFileTask) Name() string { return rft.name }
+
+func (rft *removeFileTask) WithName(name string) { rft.name = name }
+
 type funcTask struct {
-	f func() error
+	f    func(io.Writer) error
+	name string
 }
 
-func NewFuncTask(f func() error) task {
-	return &funcTask{f: f}
+func NewFuncTask(taskName string, f func(io.Writer) error) task {
+	return &funcTask{f: f, name: taskName}
 }
 
-func (rft *funcTask) Run(id int, doneChan chan taskResult) {
+func (rft *funcTask) Run(id int, output io.Writer, doneChan chan taskResult) {
 	doneChan <- taskResult{
 		Id:  id,
-		Err: rft.f(),
+		Err: rft.f(output),
 	}
 }
 
-func build(input string, output string, toPrint ToPrintFlags) error {
+func (rft *funcTask) Name() string {
+	return rft.name
+}
+
+func (rft *funcTask) WithName(name string) {
+	rft.name = name
+}
+
+func build(outputWriter io.Writer, input string, output string, toPrint ToPrintFlags) error {
 	file, err := os.Open(input)
 	if err != nil {
 		return fmt.Errorf("could not open file %q because: %v", input, err)
@@ -114,7 +140,8 @@ func build(input string, output string, toPrint ToPrintFlags) error {
 		return fmt.Errorf("parser encountered 1 or more errors")
 	}
 	if (toPrint & PrintAst) != 0 {
-		fmt.Printf("AST:\n%s\n%+#v\n", program.String(), program)
+		io.WriteString(outputWriter,
+			fmt.Sprintf("AST:\n%s\n%+#v\n", program.String(), program))
 	}
 
 	tprogram, err := typechecker.New().CheckProgram(program)
@@ -122,12 +149,14 @@ func build(input string, output string, toPrint ToPrintFlags) error {
 		return err
 	}
 	if (toPrint & PrintTAst) != 0 {
-		fmt.Printf("TAST:\n%s\n%+#v\n", tprogram.String(), tprogram)
+		io.WriteString(outputWriter,
+			fmt.Sprintf("TAST:\n%s\n%+#v\n", tprogram.String(), tprogram))
 	}
 
 	ir := ttir.EmitProgram(tprogram)
 	if (toPrint & PrintIr) != 0 {
-		fmt.Printf("TTIR:\n%s\n%+#v\n", ir.String(), ir)
+		io.WriteString(outputWriter,
+			fmt.Sprintf("TTIR:\n%s\n%+#v\n", ir.String(), ir))
 	}
 	asm := amd64.CgProgram(ir)
 
@@ -167,9 +196,10 @@ const (
 	failed
 )
 
-func runTasks(nodes map[int]*node, rootNodes []int, l *log.Logger) error {
+func runTasks(nodes map[int]*node, rootNodes []int, l *utils.Logger) error {
 
 	done := make(map[int]executionState)
+	output := make(map[int]*strings.Builder)
 	running := []int{}
 	doneChan := make(chan taskResult)
 	errs := []error{}
@@ -178,9 +208,10 @@ func runTasks(nodes map[int]*node, rootNodes []int, l *log.Logger) error {
 		if done[id] != notStarted {
 			panic(fmt.Sprintf("tried starting task %d twice", id))
 		}
-		// fmt.Printf("executing task %d\n", id)
+		l.Debugf("executing task %d", id)
 		node := nodes[id]
-		go node.task.Run(id, doneChan)
+		output[id] = &strings.Builder{}
+		go node.task.Run(id, output[id], doneChan)
 		running = append(running, id)
 		done[id] = executing
 	}
@@ -206,7 +237,7 @@ func runTasks(nodes map[int]*node, rootNodes []int, l *log.Logger) error {
 		}
 	}
 
-	// fmt.Printf("starting rootNodes %v\n", rootNodes)
+	l.Debugf("starting rootNodes %v", rootNodes)
 	for _, rootNode := range rootNodes {
 		startTask(rootNode)
 	}
@@ -216,7 +247,7 @@ func runTasks(nodes map[int]*node, rootNodes []int, l *log.Logger) error {
 	for !allFinished {
 		select {
 		case result := <-doneChan:
-			// fmt.Printf("task %d is done with err: %v\n", result.Id, result.Err)
+			l.Debugf("task %d is done with err: %v", result.Id, result.Err)
 			for i, id := range running {
 				if id == result.Id {
 					running = slices.Delete(running, i, i+1)
@@ -249,6 +280,12 @@ func runTasks(nodes map[int]*node, rootNodes []int, l *log.Logger) error {
 			if len(running) <= 0 {
 				allFinished = true
 			}
+		}
+	}
+
+	for id, node := range nodes {
+		if output[id].Len() > 0 {
+			l.Infof("task %q output: %s", node.task.Name(), output[id])
 		}
 	}
 

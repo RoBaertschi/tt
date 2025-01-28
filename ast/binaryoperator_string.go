@@ -12,11 +12,17 @@ func _() {
 	_ = x[Subtract-1]
 	_ = x[Multiply-2]
 	_ = x[Divide-3]
+	_ = x[Equal-4]
+	_ = x[NotEqual-5]
+	_ = x[LessThan-6]
+	_ = x[LessThanEqual-7]
+	_ = x[GreaterThan-8]
+	_ = x[GreaterThanEqual-9]
 }
 
-const _BinaryOperator_name = "AddSubtractMultiplyDivide"
+const _BinaryOperator_name = "AddSubtractMultiplyDivideEqualNotEqualLessThanLessThanEqualGreaterThanGreaterThanEqual"
 
-var _BinaryOperator_index = [...]uint8{0, 3, 11, 19, 25}
+var _BinaryOperator_index = [...]uint8{0, 3, 11, 19, 25, 30, 38, 46, 59, 70, 86}
 
 func (i BinaryOperator) String() string {
 	if i < 0 || i >= BinaryOperator(len(_BinaryOperator_index)-1) {

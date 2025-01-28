@@ -10,9 +10,13 @@ import (
 
 	"robaertschi.xyz/robaertschi/tt/asm"
 	"robaertschi.xyz/robaertschi/tt/build"
+	"robaertschi.xyz/robaertschi/tt/term"
 )
 
 func main() {
+	r, c, err := term.GetCursorPosition()
+	fmt.Printf("%d, %d, %v\n", r, c, err)
+
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s [flags] input\nPossible flags:\n", os.Args[0])
 		flag.PrintDefaults()
@@ -51,7 +55,7 @@ func main() {
 
 	logger := log.New(os.Stderr, "", log.Lshortfile)
 
-	err := build.NewSourceProgram(input, output).Build(asm.Fasm, *emitAsmOnly, build.ToPrintFlags(toPrint))
+	err = build.NewSourceProgram(input, output).Build(asm.Fasm, *emitAsmOnly, build.ToPrintFlags(toPrint))
 	if err != nil {
 		logger.Fatalln(err)
 		os.Exit(1)
