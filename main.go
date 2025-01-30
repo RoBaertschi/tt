@@ -14,8 +14,12 @@ import (
 )
 
 func main() {
-	r, c, err := term.GetCursorPosition()
-	fmt.Printf("%d, %d, %v\n", r, c, err)
+	err := term.EnterRawMode()
+	if err != nil {
+		fmt.Printf("could not enter raw mode %v", err)
+		return
+	}
+	defer term.LeaveRawMode()
 
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s [flags] input\nPossible flags:\n", os.Args[0])
@@ -35,7 +39,7 @@ func main() {
 	input := flag.Arg(0)
 	if input == "" {
 		flag.Usage()
-		os.Exit(1)
+		term.Exit(1)
 	}
 
 	if output == "" {
@@ -58,6 +62,6 @@ func main() {
 	err = build.NewSourceProgram(input, output).Build(asm.Fasm, *emitAsmOnly, build.ToPrintFlags(toPrint))
 	if err != nil {
 		logger.Fatalln(err)
-		os.Exit(1)
+		term.Exit(1)
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync"
 
@@ -128,7 +127,7 @@ func (l *Logger) Msg(level Level, msg string) {
 	}
 
 	if level == Fatal {
-		os.Exit(1)
+		term.Exit(1)
 	}
 }
 

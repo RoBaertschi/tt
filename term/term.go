@@ -3,7 +3,6 @@ package term
 import (
 	"errors"
 	"fmt"
-	"internal/syscall/unix"
 	"os"
 )
 
@@ -183,4 +182,9 @@ func GetCursorPosition() (row, column int, err error) {
 	}
 
 	return
+}
+
+func Exit(val int) {
+	LeaveRawMode()
+	os.Exit(val)
 }

@@ -2,5 +2,4 @@ module robaertschi.xyz/robaertschi/tt
 
 go 1.23.4
 
-require (
-)
+require golang.org/x/sys v0.29.0 // indirect
