@@ -9,7 +9,9 @@ import (
 	"slices"
 	"strings"
 
+	"robaertschi.xyz/robaertschi/tt/asm"
 	"robaertschi.xyz/robaertschi/tt/asm/amd64"
+	"robaertschi.xyz/robaertschi/tt/asm/qbe"
 	"robaertschi.xyz/robaertschi/tt/lexer"
 	"robaertschi.xyz/robaertschi/tt/parser"
 	"robaertschi.xyz/robaertschi/tt/token"
@@ -84,6 +86,42 @@ func (rft *removeFileTask) Name() string { return rft.name }
 
 func (rft *removeFileTask) WithName(name string) { rft.name = name }
 
+type createFileTask struct {
+	file    string
+	content string
+	name    string
+}
+
+func NewCreateFileTask(file string, content string) task {
+	return &createFileTask{
+		file:    file,
+		content: content,
+		name:    fmt.Sprintf("writing file %q", file),
+	}
+}
+
+func (cft *createFileTask) Run(id int, output io.Writer, doneChan chan taskResult) {
+	file, err := os.Create(cft.file)
+	if err != nil {
+		doneChan <- taskResult{
+			Id:  id,
+			Err: err,
+		}
+		return
+	}
+
+	_, err = file.WriteString(cft.content)
+	doneChan <- taskResult{
+		Id:  id,
+		Err: err,
+	}
+	return
+}
+
+func (cft *createFileTask) Name() string { return cft.name }
+
+func (cft *createFileTask) WithName(name string) { cft.name = name }
+
 type funcTask struct {
 	f    func(io.Writer) error
 	name string
@@ -108,7 +146,7 @@ func (rft *funcTask) WithName(name string) {
 	rft.name = name
 }
 
-func build(outputWriter io.Writer, input string, output string, toPrint ToPrintFlags) error {
+func build(outputWriter io.Writer, input string, output string, toPrint ToPrintFlags, backend asm.Backend) error {
 	file, err := os.Open(input)
 	if err != nil {
 		return fmt.Errorf("could not open file %q because: %v", input, err)
@@ -158,19 +196,26 @@ func build(outputWriter io.Writer, input string, output string, toPrint ToPrintF
 		io.WriteString(outputWriter,
 			fmt.Sprintf("TTIR:\n%s\n%+#v\n", ir.String(), ir))
 	}
-	asm := amd64.CgProgram(ir)
-
-	asmOutput := asm.Emit()
 
 	asmOutputFile, err := os.Create(output)
 	if err != nil {
 		return fmt.Errorf("failed to create/truncate asm file %q because: %v\n", output, err)
 	}
+	defer asmOutputFile.Close()
 
-	_, err = asmOutputFile.WriteString(asmOutput)
-	asmOutputFile.Close()
-	if err != nil {
-		return fmt.Errorf("failed to write to file %q because: %v\n", output, err)
+	if backend == asm.Fasm {
+		asm := amd64.CgProgram(ir)
+		asmOutput := asm.Emit()
+		_, err = asmOutputFile.WriteString(asmOutput)
+		if err != nil {
+			return fmt.Errorf("failed to write to file %q because: %v\n", output, err)
+		}
+	} else if backend == asm.Qbe {
+		err := qbe.Emit(asmOutputFile, ir)
+		if err != nil {
+			return fmt.Errorf("failed to write to file %q because: %v\n", output, err)
+		}
+
 	}
 
 	return nil
@@ -284,7 +329,9 @@ func runTasks(nodes map[int]*node, rootNodes []int, l *utils.Logger) error {
 	}
 
 	for id, node := range nodes {
-		if output[id].Len() > 0 {
+		if output[id] == nil {
+			l.Errorf("output of task %q is nil", nodes[id].task.Name())
+		} else if output[id].Len() > 0 {
 			l.Infof("task %q output: %s", node.task.Name(), output[id])
 		}
 	}

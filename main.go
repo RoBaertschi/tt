@@ -14,17 +14,19 @@ import (
 )
 
 func main() {
-	err := term.EnterRawMode()
-	if err != nil {
-		fmt.Printf("could not enter raw mode %v", err)
-		return
-	}
-	defer term.LeaveRawMode()
+	// err := term.EnterRawMode()
+	// if err != nil {
+	// 	fmt.Printf("could not enter raw mode %v", err)
+	// 	return
+	// }
+	// defer term.LeaveRawMode()
 
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s [flags] input\nPossible flags:\n", os.Args[0])
 		flag.PrintDefaults()
 	}
+
+	qbe := flag.Bool("qbe", false, "Use the qbe backend")
 
 	var output string
 	flag.StringVar(&output, "o", "", "Output a executable named `file`")
@@ -59,7 +61,12 @@ func main() {
 
 	logger := log.New(os.Stderr, "", log.Lshortfile)
 
-	err = build.NewSourceProgram(input, output).Build(asm.Fasm, *emitAsmOnly, build.ToPrintFlags(toPrint))
+	backend := asm.Fasm
+	if *qbe {
+		backend = asm.Qbe
+	}
+
+	err := build.NewSourceProgram(input, output).Build(backend, *emitAsmOnly, build.ToPrintFlags(toPrint))
 	if err != nil {
 		logger.Fatalln(err)
 		term.Exit(1)
