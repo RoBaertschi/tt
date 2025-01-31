@@ -34,8 +34,8 @@ type processTask struct {
 
 func NewProcessTask(name string, args ...string) task {
 	return &processTask{
-		taskName: name,
 		name:     name,
+		taskName: fmt.Sprintf("starting %q %v\n", name, args),
 		args:     args,
 	}
 }
@@ -49,7 +49,6 @@ func (pt *processTask) Run(id int, output io.Writer, doneChan chan taskResult) {
 	cmd.Stdout = utils.NewPrefixWriterString(output, pt.name+" output: ")
 	cmd.Stderr = cmd.Stdout
 
-	io.WriteString(output, fmt.Sprintf("starting %q %v\n", pt.name, pt.args))
 	err := cmd.Run()
 	var exitError error
 	if cmd.ProcessState.ExitCode() != 0 {
@@ -330,7 +329,7 @@ func runTasks(nodes map[int]*node, rootNodes []int, l *utils.Logger) error {
 
 	for id, node := range nodes {
 		if output[id] == nil {
-			l.Errorf("output of task %q is nil", nodes[id].task.Name())
+			l.Warnf("output of task %q is nil", nodes[id].task.Name())
 		} else if output[id].Len() > 0 {
 			l.Infof("task %q output: %s", node.task.Name(), output[id])
 		}

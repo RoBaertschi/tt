@@ -3,6 +3,8 @@
 ; https://en.wikipedia.org/wiki/X86_calling_conventions#List_of_x86_calling_conventions
 format ELF64
 
+section ".text" executable
+
     public syscall1
     public syscall2
     public syscall3

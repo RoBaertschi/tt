@@ -102,6 +102,10 @@ func emitInstruction(w io.Writer, i ttir.Instruction) error {
 			inst = "mul"
 		case ast.Divide:
 			inst = "div"
+		case ast.Equal:
+			inst = "ceql"
+		case ast.NotEqual:
+			inst = "cnel"
 		case ast.GreaterThan:
 			inst = "csgtl"
 		case ast.GreaterThanEqual:
