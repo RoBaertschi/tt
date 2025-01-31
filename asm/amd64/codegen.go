@@ -41,7 +41,7 @@ func CgProgram(prog *ttir.Program) *Program {
 	return &newProgram
 }
 
-func cgFunction(f ttir.Function) Function {
+func cgFunction(f *ttir.Function) Function {
 	newInstructions := []Instruction{}
 
 	for _, inst := range f.Instructions {

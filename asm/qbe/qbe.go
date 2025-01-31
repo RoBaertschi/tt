@@ -19,6 +19,28 @@ func emitf(w io.Writer, format string, args ...any) error {
 }
 
 func Emit(output io.Writer, input *ttir.Program) error {
+	if input.MainFunction.HasReturnValue {
+		emitf(output, `
+export function $_start() {
+@start
+    %%result =l call $main()
+    call $syscall1(l 60, l %%result)
+    hlt
+}
+            `,
+		)
+	} else {
+		emitf(output, `
+export function $_start() {
+@start
+    call $main()
+    call $syscall1(l 60, l 0)
+    hlt
+}
+`,
+		)
+	}
+
 	for _, f := range input.Functions {
 		err := emitFunction(output, f)
 		if err != nil {
@@ -28,7 +50,7 @@ func Emit(output io.Writer, input *ttir.Program) error {
 	return nil
 }
 
-func emitFunction(w io.Writer, f ttir.Function) error {
+func emitFunction(w io.Writer, f *ttir.Function) error {
 	emitf(w, "export function ")
 	if f.HasReturnValue {
 		if err := emitf(w, "l "); err != nil {

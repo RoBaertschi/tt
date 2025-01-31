@@ -15,27 +15,35 @@ func temp() string {
 }
 
 func EmitProgram(program *tast.Program) *Program {
-	functions := make([]Function, 0)
+	functions := make([]*Function, 0)
+	var mainFunction *Function
 	for _, decl := range program.Declarations {
 		switch decl := decl.(type) {
 		case *tast.FunctionDeclaration:
-			functions = append(functions, *emitFunction(decl))
+			f := emitFunction(decl)
+			functions = append(functions, f)
+			if f.Name == "main" {
+				mainFunction = f
+			}
 		}
 	}
 
 	return &Program{
-		Functions: functions,
+		Functions:    functions,
+		MainFunction: mainFunction,
 	}
 }
 
 func emitFunction(function *tast.FunctionDeclaration) *Function {
 	value, instructions := emitExpression(function.Body)
 	instructions = append(instructions, &Ret{Op: value})
-	return &Function{
+	f := &Function{
 		Name:           function.Name,
 		Instructions:   instructions,
 		HasReturnValue: !function.ReturnType.IsSameType(types.Unit),
 	}
+
+	return f
 }
 
 func emitExpression(expr tast.Expression) (Operand, []Instruction) {

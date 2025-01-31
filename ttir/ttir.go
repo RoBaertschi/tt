@@ -8,7 +8,8 @@ import (
 )
 
 type Program struct {
-	Functions []Function
+	Functions    []*Function
+	MainFunction *Function
 }
 
 func (p *Program) String() string {
