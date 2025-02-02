@@ -93,6 +93,17 @@ func (c *Checker) inferExpression(expr ast.Expression) (tast.Expression, error) 
 			ReturnType:       returnType,
 			ReturnExpression: returnExpr,
 		}, errors.Join(errs...)
+
+	case *ast.IfExpression:
+		cond, condErr := c.inferExpression(expr.Condition)
+		then, thenErr := c.inferExpression(expr.Then)
+
+		if expr.Else != nil {
+			elseExpr, elseErr := c.inferExpression(expr.Else)
+
+			return &tast.IfExpression{Token: expr.Token, Condition: cond, Then: then, Else: elseExpr, ReturnType: then.Type()}, errors.Join(condErr, thenErr, elseErr)
+		}
+		return &tast.IfExpression{Token: expr.Token, Condition: cond, Then: then, Else: nil, ReturnType: types.Unit}, errors.Join(condErr, thenErr)
 	}
 	return nil, fmt.Errorf("unhandled expression in type inferer")
 }

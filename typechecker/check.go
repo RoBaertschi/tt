@@ -7,6 +7,7 @@ import (
 	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/tast"
 	"robaertschi.xyz/robaertschi/tt/token"
+	"robaertschi.xyz/robaertschi/tt/types"
 )
 
 type Checker struct {
@@ -95,6 +96,26 @@ func (c *Checker) checkExpression(expr tast.Expression) error {
 			errs = append(errs, c.checkExpression(expr.ReturnExpression))
 		}
 		return errors.Join(errs...)
+	case *tast.IfExpression:
+		condErr := c.checkExpression(expr.Condition)
+		if condErr == nil {
+			if !expr.Condition.Type().IsSameType(types.Bool) {
+				condErr = c.error(expr.Token, "the condition in the if should be a boolean, but got %q", expr.Condition.Type().Name())
+			}
+		}
+		thenErr := c.checkExpression(expr.Then)
+
+		if expr.Else == nil {
+			return errors.Join(condErr, thenErr)
+		}
+
+		elseErr := c.checkExpression(expr.Else)
+		if thenErr == nil && elseErr == nil {
+			if !expr.Then.Type().IsSameType(expr.Else.Type()) {
+				thenErr = c.error(expr.Token, "the then branch of type %q does not match with the else branch of type %q", expr.Then.Type().Name(), expr.Else.Type().Name())
+			}
+		}
+		return errors.Join(condErr, thenErr, elseErr)
 	}
 	return fmt.Errorf("unhandled expression %T in type checker", expr)
 }

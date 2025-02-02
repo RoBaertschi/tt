@@ -74,6 +74,36 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 		}
 	case *ttir.Binary:
 		return cgBinary(i)
+	case ttir.Label:
+		return []Instruction{Label(i)}
+	case *ttir.JumpIfZero:
+		return []Instruction{
+			&SimpleInstruction{
+				Opcode: Cmp,
+				Lhs:    toAsmOperand(i.Value),
+				Rhs:    Imm(0),
+			},
+			&JumpCCInstruction{
+				Cond: Equal,
+				Dst:  i.Label,
+			},
+		}
+	case *ttir.JumpIfNotZero:
+		return []Instruction{
+			&SimpleInstruction{
+				Opcode: Cmp,
+				Lhs:    toAsmOperand(i.Value),
+				Rhs:    Imm(0),
+			},
+			&JumpCCInstruction{
+				Cond: NotEqual,
+				Dst:  i.Label,
+			},
+		}
+	case ttir.Jump:
+		return []Instruction{JmpInstruction(i)}
+	case *ttir.Copy:
+		return []Instruction{&SimpleInstruction{Opcode: Mov, Lhs: toAsmOperand(i.Dst), Rhs: toAsmOperand(i.Src)}}
 	}
 
 	return []Instruction{}
@@ -190,6 +220,8 @@ func rpInstruction(i Instruction, r *replacePseudoPass) Instruction {
 			Cond: i.Cond,
 			Dst:  pseudoToStack(i.Dst, r),
 		}
+	case *JumpCCInstruction, JmpInstruction, Label:
+		return i
 	}
 
 	panic("invalid instruction")
@@ -295,6 +327,8 @@ func fixupInstruction(i Instruction) []Instruction {
 		return []Instruction{i}
 	case *SetCCInstruction:
 
+		return []Instruction{i}
+	case *JumpCCInstruction, JmpInstruction, Label:
 		return []Instruction{i}
 	}
 

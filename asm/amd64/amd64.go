@@ -84,12 +84,11 @@ type Opcode string
 const (
 
 	// Two operands
-	Mov   Opcode = "mov" // Lhs: dst, Rhs: src, or better said intel syntax
-	Add   Opcode = "add"
-	Sub   Opcode = "sub"
-	Imul  Opcode = "imul"
-	Cmp   Opcode = "cmp"
-	SetCC Opcode = "setcc"
+	Mov  Opcode = "mov" // Lhs: dst, Rhs: src, or better said intel syntax
+	Add  Opcode = "add"
+	Sub  Opcode = "sub"
+	Imul Opcode = "imul"
+	Cmp  Opcode = "cmp"
 
 	// One operand
 	Idiv Opcode = "idiv"
@@ -128,6 +127,27 @@ func (i *SimpleInstruction) InstructionString() string {
 
 	// Two operands
 	return fmt.Sprintf("%s %s, %s", i.Opcode, i.Lhs.OperandString(Eight), i.Rhs.OperandString(Eight))
+}
+
+type Label string
+
+func (l Label) InstructionString() string {
+	return fmt.Sprintf("%s:", l)
+}
+
+type JumpCCInstruction struct {
+	Cond CondCode
+	Dst  string
+}
+
+func (j *JumpCCInstruction) InstructionString() string {
+	return fmt.Sprintf("j%s %s", j.Cond, j.Dst)
+}
+
+type JmpInstruction string
+
+func (j JmpInstruction) InstructionString() string {
+	return fmt.Sprintf("jmp %s", j)
 }
 
 type SetCCInstruction struct {

@@ -56,6 +56,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.False, p.parseBooleanExpression)
 	p.registerPrefixFn(token.OpenParen, p.parseGroupedExpression)
 	p.registerPrefixFn(token.OpenBrack, p.parseBlockExpression)
+	p.registerPrefixFn(token.If, p.parseIfExpression)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfixFn(token.Plus, p.parseBinaryExpression)
@@ -333,4 +334,37 @@ func (p *Parser) parseBlockExpression() ast.Expression {
 	}
 
 	return block
+}
+
+func (p *Parser) parseIfExpression() ast.Expression {
+	if ok, errExpr := p.expect(token.If); !ok {
+		return errExpr
+	}
+
+	ifExpr := &ast.IfExpression{Token: p.curToken}
+
+	p.nextToken()
+	ifExpr.Condition = p.parseExpression(PrecLowest)
+
+	if p.peekTokenIs(token.OpenBrack) {
+		p.nextToken()
+		ifExpr.Then = p.parseBlockExpression()
+	} else {
+		if ok, errExpr := p.expectPeek(token.In); !ok {
+			return errExpr
+		}
+
+		p.nextToken()
+		ifExpr.Then = p.parseExpression(PrecLowest)
+	}
+
+	if p.peekTokenIs(token.Else) {
+		p.nextToken()
+		p.nextToken()
+		ifExpr.Else = p.parseExpression(PrecLowest)
+	} else {
+		ifExpr.Else = nil
+	}
+
+	return ifExpr
 }

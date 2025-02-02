@@ -140,3 +140,32 @@ func (be *BlockExpression) String() string {
 
 	return builder.String()
 }
+
+type IfExpression struct {
+	Token     token.Token // The 'if' token
+	Condition Expression
+	Then      Expression
+	// Can be nil
+	Else       Expression
+	ReturnType types.Type
+}
+
+func (ie *IfExpression) expressionNode() {}
+func (ie *IfExpression) Type() types.Type {
+	return ie.ReturnType
+}
+func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IfExpression) String() string {
+	var builder strings.Builder
+
+	builder.WriteString("(if\n\t")
+	builder.WriteString(ie.Then.String())
+
+	if ie.Else != nil {
+		builder.WriteString(" else in ")
+		builder.WriteString(ie.Else.String())
+	}
+	builder.WriteString(")")
+
+	return builder.String()
+}

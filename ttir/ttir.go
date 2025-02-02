@@ -67,6 +67,16 @@ func (b *Binary) String() string {
 }
 func (b *Binary) instruction() {}
 
+type Copy struct {
+	Src Operand
+	Dst Operand
+}
+
+func (c *Copy) String() string {
+	return fmt.Sprintf("%s = copy %s\n", c.Dst, c.Src)
+}
+func (c *Copy) instruction() {}
+
 type JumpIfZero struct {
 	Value Operand
 	Label string

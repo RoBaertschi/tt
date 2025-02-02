@@ -10,6 +10,13 @@ import (
 	_ "embed"
 )
 
+var extraLabelId int64 = 0
+
+func extraLabel() string {
+	extraLabelId += 1
+	return fmt.Sprintf("qbe.extra.%d", extraLabelId)
+}
+
 //go:embed qbe_stub.asm
 var Stub string
 
@@ -118,7 +125,30 @@ func emitInstruction(w io.Writer, i ttir.Instruction) error {
 		if err := emitf(w, "\t%s =l %s %s, %s\n", emitOperand(i.Dst), inst, emitOperand(i.Lhs), emitOperand(i.Rhs)); err != nil {
 			return err
 		}
-
+	case *ttir.Copy:
+		if err := emitf(w, "\t%s =l copy %s\n", emitOperand(i.Dst), emitOperand(i.Src)); err != nil {
+			return err
+		}
+	case ttir.Label:
+		if err := emitf(w, "@%s\n", string(i)); err != nil {
+			return err
+		}
+	case ttir.Jump:
+		if err := emitf(w, "\tjmp @%s\n", string(i)); err != nil {
+			return err
+		}
+	case *ttir.JumpIfNotZero:
+		after := extraLabel()
+		if err := emitf(w, "\tjnz %s, @%s, @%s\n@%s\n", emitOperand(i.Value), i.Label, after, after); err != nil {
+			return err
+		}
+	case *ttir.JumpIfZero:
+		after := extraLabel()
+		if err := emitf(w, "\tjnz %s, @%s, @%s\n@%s\n", emitOperand(i.Value), after, i.Label, after); err != nil {
+			return err
+		}
+	default:
+		panic("unkown instruction")
 	}
 
 	return nil

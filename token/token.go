@@ -16,9 +16,12 @@ type Token struct {
 }
 
 var keywords = map[string]TokenType{
-	"fn":    Fn,
-	"true":  True,
+	"else":  Else,
 	"false": False,
+	"fn":    Fn,
+	"if":    If,
+	"in":    In,
+	"true":  True,
 }
 
 const (
@@ -48,9 +51,12 @@ const (
 	GreaterThanEqual TokenType = ">="
 
 	// Keywords
-	Fn    TokenType = "FN"
-	True  TokenType = "TRUE"
+	Else  TokenType = "ELSE"
 	False TokenType = "FALSE"
+	Fn    TokenType = "FN"
+	If    TokenType = "IF"
+	In    TokenType = "IN"
+	True  TokenType = "TRUE"
 )
 
 func LookupKeyword(literal string) TokenType {
