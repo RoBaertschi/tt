@@ -32,6 +32,7 @@ const (
 	Int   TokenType = "INT"
 
 	Semicolon  TokenType = ";"
+	Colon      TokenType = ":"
 	Equal      TokenType = "="
 	OpenParen  TokenType = "("
 	CloseParen TokenType = ")"

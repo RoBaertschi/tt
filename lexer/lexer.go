@@ -65,6 +65,8 @@ func (l *Lexer) NextToken() token.Token {
 	switch l.ch {
 	case ';':
 		tok = l.newToken(token.Semicolon)
+	case ':':
+		tok = l.newToken(token.Colon)
 	case '=':
 		if l.peekByte() == '=' {
 			pos := l.position

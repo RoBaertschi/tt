@@ -1,6 +1,11 @@
 fn main() = {
-    if 3 == 2 {
-        if 3 == 3 in 3
-        else 4
-    } else 2
+    hi: i64 = 4;
+
+    if hi == 2 {
+        hi = 3
+    } else {
+        hi = 2
+    }
+
+    hi
 };
