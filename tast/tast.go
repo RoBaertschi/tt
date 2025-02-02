@@ -158,14 +158,14 @@ func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *IfExpression) String() string {
 	var builder strings.Builder
 
-	builder.WriteString("(if\n\t")
+	builder.WriteString(fmt.Sprintf("(if %s\n\t", ie.Condition.String()))
 	builder.WriteString(ie.Then.String())
 
 	if ie.Else != nil {
 		builder.WriteString(" else in ")
 		builder.WriteString(ie.Else.String())
 	}
-	builder.WriteString(")")
+	builder.WriteString(fmt.Sprintf(") :> %s", ie.Type().Name()))
 
 	return builder.String()
 }

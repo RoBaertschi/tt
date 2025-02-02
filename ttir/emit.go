@@ -98,20 +98,26 @@ func emitExpression(expr tast.Expression) (Operand, []Instruction) {
 		// } endOfIf:
 		elseLabel := tempLabel()
 		endOfIfLabel := tempLabel()
-		dst := &Var{Value: temp()}
+		var dst Operand = &Var{Value: temp()}
 
 		condDst, instructions := emitExpression(expr.Condition)
 
 		instructions = append(instructions, &JumpIfZero{Value: condDst, Label: elseLabel})
 		thenDst, thenInstructions := emitExpression(expr.Then)
 		instructions = append(instructions, thenInstructions...)
-		instructions = append(instructions, &Copy{Src: thenDst, Dst: dst}, Jump(endOfIfLabel))
+		if !expr.ReturnType.IsSameType(types.Unit) {
+			instructions = append(instructions, &Copy{Src: thenDst, Dst: dst}, Jump(endOfIfLabel))
+		} else {
+			dst = nil
+		}
 
 		instructions = append(instructions, Label(elseLabel))
 		if expr.Else != nil {
 			elseDst, elseInstructions := emitExpression(expr.Else)
 			instructions = append(instructions, elseInstructions...)
-			instructions = append(instructions, &Copy{Src: elseDst, Dst: dst})
+			if !expr.ReturnType.IsSameType(types.Unit) {
+				instructions = append(instructions, &Copy{Src: elseDst, Dst: dst})
+			}
 		}
 		instructions = append(instructions, Label(endOfIfLabel))
 		return dst, instructions

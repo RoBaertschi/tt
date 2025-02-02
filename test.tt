@@ -1,5 +1,5 @@
 fn main() = {
     if 3 == 3
-        in 4
-        else 3
+        { if 4 == 4 in 3 }
+    else {}
 };
