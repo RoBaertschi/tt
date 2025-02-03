@@ -57,6 +57,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.OpenParen, p.parseGroupedExpression)
 	p.registerPrefixFn(token.OpenBrack, p.parseBlockExpression)
 	p.registerPrefixFn(token.If, p.parseIfExpression)
+	p.registerPrefixFn(token.Ident, p.parseVariable)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfixFn(token.Plus, p.parseBinaryExpression)
@@ -264,41 +265,6 @@ func (p *Parser) parseBooleanExpression() ast.Expression {
 	}
 }
 
-func (p *Parser) parseBinaryExpression(lhs ast.Expression) ast.Expression {
-	var op ast.BinaryOperator
-	switch p.curToken.Type {
-	case token.Plus:
-		op = ast.Add
-	case token.Minus:
-		op = ast.Subtract
-	case token.Asterisk:
-		op = ast.Multiply
-	case token.Slash:
-		op = ast.Divide
-	case token.DoubleEqual:
-		op = ast.Equal
-	case token.NotEqual:
-		op = ast.NotEqual
-	case token.LessThan:
-		op = ast.LessThan
-	case token.LessThanEqual:
-		op = ast.LessThanEqual
-	case token.GreaterThan:
-		op = ast.GreaterThan
-	case token.GreaterThanEqual:
-		op = ast.GreaterThanEqual
-	default:
-		return p.exprError(p.curToken, "invalid token for binary expression %s", p.curToken.Type)
-	}
-	tok := p.curToken
-
-	precedence := p.curPrecedence()
-	p.nextToken()
-	rhs := p.parseExpression(precedence)
-
-	return &ast.BinaryExpression{Lhs: lhs, Rhs: rhs, Operator: op, Token: tok}
-}
-
 func (p *Parser) parseGroupedExpression() ast.Expression {
 	p.expect(token.OpenParen)
 
@@ -367,4 +333,85 @@ func (p *Parser) parseIfExpression() ast.Expression {
 	}
 
 	return ifExpr
+}
+
+func (p *Parser) parseVariable() ast.Expression {
+	if ok, errExpr := p.expect(token.Ident); !ok {
+		return errExpr
+	}
+
+	if p.peekTokenIs(token.Colon) {
+		return p.parseVariableDeclaration()
+	} else {
+		return &ast.VariableReference{
+			Token:      p.curToken,
+			Identifier: p.curToken.Literal,
+		}
+	}
+
+	// FIXME(Robin): Add variable references
+	// Lets panic about deez nuts of yours
+	panic("deez nuts")
+}
+
+func (p *Parser) parseVariableDeclaration() ast.Expression {
+	if ok, errExpr := p.expect(token.Ident); !ok {
+		return errExpr
+	}
+
+	variable := &ast.VariableDeclaration{Token: p.curToken, Identifier: p.curToken.Literal}
+	if ok, errExpr := p.expectPeek(token.Colon); !ok {
+		return errExpr
+	}
+
+	if p.peekTokenIs(token.Ident) {
+		p.nextToken()
+		variable.Type = p.curToken.Literal
+	}
+
+	if ok, errExpr := p.expectPeek(token.Equal); !ok {
+		return errExpr
+	}
+
+	p.nextToken()
+	variable.InitializingExpression = p.parseExpression(PrecLowest)
+
+	return variable
+}
+
+// Binary
+
+func (p *Parser) parseBinaryExpression(lhs ast.Expression) ast.Expression {
+	var op ast.BinaryOperator
+	switch p.curToken.Type {
+	case token.Plus:
+		op = ast.Add
+	case token.Minus:
+		op = ast.Subtract
+	case token.Asterisk:
+		op = ast.Multiply
+	case token.Slash:
+		op = ast.Divide
+	case token.DoubleEqual:
+		op = ast.Equal
+	case token.NotEqual:
+		op = ast.NotEqual
+	case token.LessThan:
+		op = ast.LessThan
+	case token.LessThanEqual:
+		op = ast.LessThanEqual
+	case token.GreaterThan:
+		op = ast.GreaterThan
+	case token.GreaterThanEqual:
+		op = ast.GreaterThanEqual
+	default:
+		return p.exprError(p.curToken, "invalid token for binary expression %s", p.curToken.Type)
+	}
+	tok := p.curToken
+
+	precedence := p.curPrecedence()
+	p.nextToken()
+	rhs := p.parseExpression(precedence)
+
+	return &ast.BinaryExpression{Lhs: lhs, Rhs: rhs, Operator: op, Token: tok}
 }

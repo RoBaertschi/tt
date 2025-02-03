@@ -169,3 +169,35 @@ func (ie *IfExpression) String() string {
 
 	return builder.String()
 }
+
+// This is still a expression, because making it some other type of node would be to much work
+type VariableDeclaration struct {
+	Token                  token.Token // The Identifier token
+	InitializingExpression Expression
+	VariableType           types.Type
+	Identifier             string
+}
+
+func (vd *VariableDeclaration) expressionNode() {}
+func (vd *VariableDeclaration) Type() types.Type {
+	return vd.VariableType
+}
+func (vd *VariableDeclaration) TokenLiteral() string { return vd.Token.Literal }
+func (vd *VariableDeclaration) String() string {
+	return fmt.Sprintf("%s : %v = %s", vd.Identifier, vd.Type().Name(), vd.InitializingExpression)
+}
+
+type VariableReference struct {
+	Token        token.Token // The identifier token
+	Identifier   string
+	VariableType types.Type
+}
+
+func (vr *VariableReference) expressionNode() {}
+func (vr *VariableReference) Type() types.Type {
+	return vr.VariableType
+}
+func (vr *VariableReference) TokenLiteral() string { return vr.Token.Literal }
+func (vr *VariableReference) String() string {
+	return fmt.Sprintf("%s", vr.Identifier)
+}
