@@ -185,6 +185,6 @@ func GetCursorPosition() (row, column int, err error) {
 }
 
 func Exit(val int) {
-	LeaveRawMode()
+	// LeaveRawMode()
 	os.Exit(val)
 }
