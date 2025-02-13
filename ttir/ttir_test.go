@@ -58,7 +58,7 @@ func expectProgram(t *testing.T, expected *Program, actual *Program) {
 	}
 }
 
-func expectFunction(t *testing.T, expected Function, actual Function) {
+func expectFunction(t *testing.T, expected *Function, actual *Function) {
 	t.Helper()
 
 	if expected.Name != actual.Name {
@@ -133,7 +133,7 @@ func TestBasicFunction(t *testing.T) {
 	runTTIREmitterTest(t, ttirEmitterTest{
 		input: "fn main() = 0;",
 		expected: Program{
-			Functions: []Function{
+			Functions: []*Function{
 				{
 					Name: "main",
 					Instructions: []Instruction{
@@ -151,7 +151,7 @@ func TestBinaryExpression(t *testing.T) {
 	runTTIREmitterTest(t, ttirEmitterTest{
 		input: "fn main() = 3 + 3 + 3;",
 		expected: Program{
-			Functions: []Function{
+			Functions: []*Function{
 				{Name: "main", Instructions: []Instruction{
 					&Binary{Operator: ast.Add, Lhs: &Constant{Value: 3}, Rhs: &Constant{Value: 3}, Dst: &Var{Value: "temp.1"}},
 					&Binary{Operator: ast.Add, Lhs: &Var{Value: "temp.1"}, Rhs: &Constant{Value: 3}, Dst: &Var{Value: "temp.2"}},

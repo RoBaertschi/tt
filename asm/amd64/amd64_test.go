@@ -147,7 +147,7 @@ var basicTest string
 
 func TestCodegen(t *testing.T) {
 	program := &ttir.Program{
-		Functions: []ttir.Function{
+		Functions: []*ttir.Function{
 			{
 				Name:           "main",
 				HasReturnValue: true,
@@ -193,7 +193,7 @@ var binaryTest string
 
 func TestBinary(t *testing.T) {
 	program := &ttir.Program{
-		Functions: []ttir.Function{
+		Functions: []*ttir.Function{
 			{
 				Name: "main",
 				Instructions: []ttir.Instruction{
@@ -222,7 +222,7 @@ var equalityTest string
 // There was once a bug with how the cmp instructions were generated, this check should fail if it happens again
 func TestEqualityOperators(t *testing.T) {
 	program := ttir.Program{
-		Functions: []ttir.Function{
+		Functions: []*ttir.Function{
 			{
 				Name:           "main",
 				HasReturnValue: false,
