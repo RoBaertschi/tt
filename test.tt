@@ -1,11 +1,8 @@
 fn main() = {
     hi: i64 = 4;
 
-    if hi == 2 {
-        hi = 3
-    } else {
-        hi = 2
-    }
+    if hi == 2 in hi = 3
+    else hi = 2;
 
     hi
 };

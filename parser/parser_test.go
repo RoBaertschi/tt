@@ -131,6 +131,33 @@ func expectExpression(t *testing.T, expected ast.Expression, actual ast.Expressi
 			expectExpression(t, expectedExpression, blockExpr.Expressions[i])
 		}
 		expectExpression(t, expected.ReturnExpression, blockExpr.ReturnExpression)
+	case *ast.VariableDeclaration:
+		varDecl, ok := actual.(*ast.VariableDeclaration)
+		if !ok {
+			t.Errorf("expected %T, got %T", expected, actual)
+			return
+		}
+
+		if expected.Identifier != varDecl.Identifier {
+			t.Errorf("expected variable identifier to be %q, got %q", expected.Identifier, varDecl.Identifier)
+		}
+
+		if expected.Type != varDecl.Type {
+			t.Errorf("expected variable type to be %q, got %q", expected.Type, varDecl.Type)
+		}
+
+		expectExpression(t, expected.InitializingExpression, varDecl.InitializingExpression)
+	case *ast.VariableReference:
+		varRef, ok := actual.(*ast.VariableReference)
+
+		if !ok {
+			t.Errorf("expected %T, got %T", expected, actual)
+			return
+		}
+
+		if expected.Identifier != varRef.Identifier {
+			t.Errorf("expected variable reference identifier to be %q but got %q", expected.Identifier, varRef.Identifier)
+		}
 	default:
 		t.Fatalf("unknown expression type %T", expected)
 	}
@@ -210,6 +237,30 @@ func TestGroupedExpression(t *testing.T) {
 				&ast.FunctionDeclaration{
 					Name: "main",
 					Body: &ast.IntegerExpression{Value: 3},
+				},
+			},
+		},
+	}
+	runParserTest(test, t)
+}
+
+func TestVariableExpression(t *testing.T) {
+	test := parserTest{
+		input: "fn main() = { x : u32 = 3; x };",
+		expectedProgram: ast.Program{
+			Declarations: []ast.Declaration{
+				&ast.FunctionDeclaration{
+					Name: "main",
+					Body: &ast.BlockExpression{
+						Expressions: []ast.Expression{
+							&ast.VariableDeclaration{
+								InitializingExpression: &ast.IntegerExpression{Value: 3},
+								Identifier:             "x",
+								Type:                   "u32",
+							},
+						},
+						ReturnExpression: &ast.VariableReference{Identifier: "x"},
+					},
 				},
 			},
 		},

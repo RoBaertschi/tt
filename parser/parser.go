@@ -16,6 +16,7 @@ const (
 	PrecComparison
 	PrecSum
 	PrecProduct
+	PrecAssignment
 )
 
 var precedences = map[token.TokenType]precedence{
@@ -29,6 +30,7 @@ var precedences = map[token.TokenType]precedence{
 	token.GreaterThanEqual: PrecComparison,
 	token.LessThan:         PrecComparison,
 	token.LessThanEqual:    PrecComparison,
+	token.Equal:            PrecAssignment,
 }
 
 type ErrorCallback func(token.Token, string, ...any)
@@ -70,6 +72,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfixFn(token.GreaterThanEqual, p.parseBinaryExpression)
 	p.registerInfixFn(token.LessThan, p.parseBinaryExpression)
 	p.registerInfixFn(token.LessThanEqual, p.parseBinaryExpression)
+
+	p.registerInfixFn(token.Equal, p.parseAssignmentExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -340,9 +344,10 @@ func (p *Parser) parseVariable() ast.Expression {
 		return errExpr
 	}
 
-	if p.peekTokenIs(token.Colon) {
+	switch p.peekToken.Type {
+	case token.Colon:
 		return p.parseVariableDeclaration()
-	} else {
+	default:
 		return &ast.VariableReference{
 			Token:      p.curToken,
 			Identifier: p.curToken.Literal,
@@ -414,4 +419,21 @@ func (p *Parser) parseBinaryExpression(lhs ast.Expression) ast.Expression {
 	rhs := p.parseExpression(precedence)
 
 	return &ast.BinaryExpression{Lhs: lhs, Rhs: rhs, Operator: op, Token: tok}
+}
+
+func (p *Parser) parseAssignmentExpression(lhs ast.Expression) ast.Expression {
+	if ok, errExpr := p.expect(token.Equal); !ok {
+		return errExpr
+	}
+
+	varAss := &ast.AssignmentExpression{
+		Token: p.curToken,
+		Lhs:   lhs,
+	}
+
+	p.nextToken()
+
+	varAss.Rhs = p.parseExpression(PrecLowest)
+
+	return varAss
 }

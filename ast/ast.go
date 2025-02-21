@@ -215,3 +215,15 @@ func (vr *VariableReference) TokenLiteral() string { return vr.Token.Literal }
 func (vr *VariableReference) String() string {
 	return fmt.Sprintf("%s", vr.Identifier)
 }
+
+type AssignmentExpression struct {
+	Token token.Token // The Equal
+	Lhs   Expression
+	Rhs   Expression
+}
+
+func (ae *AssignmentExpression) expressionNode()      {}
+func (ae *AssignmentExpression) TokenLiteral() string { return ae.Token.Literal }
+func (ae *AssignmentExpression) String() string {
+	return fmt.Sprintf("%s = %s", ae.Lhs.String(), ae.Rhs.String())
+}
