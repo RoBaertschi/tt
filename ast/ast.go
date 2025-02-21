@@ -191,7 +191,6 @@ func (ie *IfExpression) String() string {
 	return builder.String()
 }
 
-// This is still a expression, because making it some other type of node would be to much work
 type VariableDeclaration struct {
 	Token                  token.Token // The Identifier token
 	InitializingExpression Expression
