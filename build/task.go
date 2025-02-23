@@ -145,7 +145,14 @@ func (rft *funcTask) WithName(name string) {
 	rft.name = name
 }
 
-func build(outputWriter io.Writer, input string, output string, toPrint ToPrintFlags, backend asm.Backend) error {
+func build(outputWriter io.Writer, input string, output string, toPrint ToPrintFlags, backend asm.Backend) (err error) {
+
+	defer func() {
+		if panicErr := recover(); panicErr != nil {
+			err = fmt.Errorf("panic in build: %#v", panicErr)
+		}
+	}()
+
 	file, err := os.Open(input)
 	if err != nil {
 		return fmt.Errorf("could not open file %q because: %v", input, err)
@@ -217,7 +224,7 @@ func build(outputWriter io.Writer, input string, output string, toPrint ToPrintF
 
 	}
 
-	return nil
+	return
 }
 
 type taskResult struct {

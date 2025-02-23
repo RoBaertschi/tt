@@ -45,6 +45,15 @@ func (ti *TypeId) Name() string {
 	return ti.name
 }
 
+var types map[string]Type = make(map[string]Type)
+
 func New(id int64, name string) Type {
-	return &TypeId{id: id, name: name}
+	typeId := &TypeId{id: id, name: name}
+	types[name] = typeId
+	return typeId
+}
+
+func From(name string) (Type, bool) {
+	t, ok := types[name]
+	return t, ok
 }

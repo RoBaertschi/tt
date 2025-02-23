@@ -10,6 +10,7 @@ import (
 )
 
 func (c *Checker) inferTypes(program *ast.Program) (*tast.Program, error) {
+	c.functionVariables = make(map[string]Variables)
 	decls := []tast.Declaration{}
 	errs := []error{}
 
@@ -28,7 +29,9 @@ func (c *Checker) inferTypes(program *ast.Program) (*tast.Program, error) {
 func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, error) {
 	switch decl := decl.(type) {
 	case *ast.FunctionDeclaration:
-		body, err := c.inferExpression(decl.Body)
+		vars := make(Variables)
+		body, err := c.inferExpression(vars, decl.Body)
+		c.functionVariables[decl.Name] = vars
 
 		if err != nil {
 			return nil, err
@@ -39,7 +42,7 @@ func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, erro
 	return nil, errors.New("unhandled declaration in type inferer")
 }
 
-func (c *Checker) inferExpression(expr ast.Expression) (tast.Expression, error) {
+func (c *Checker) inferExpression(vars Variables, expr ast.Expression) (tast.Expression, error) {
 	switch expr := expr.(type) {
 	case *ast.IntegerExpression:
 		return &tast.IntegerExpression{Token: expr.Token, Value: expr.Value}, nil
@@ -48,8 +51,8 @@ func (c *Checker) inferExpression(expr ast.Expression) (tast.Expression, error) 
 	case *ast.ErrorExpression:
 		return nil, c.error(expr.InvalidToken, "invalid expression")
 	case *ast.BinaryExpression:
-		lhs, lhsErr := c.inferExpression(expr.Lhs)
-		rhs, rhsErr := c.inferExpression(expr.Rhs)
+		lhs, lhsErr := c.inferExpression(vars, expr.Lhs)
+		rhs, rhsErr := c.inferExpression(vars, expr.Rhs)
 		var resultType types.Type
 		if lhsErr == nil && rhsErr == nil {
 			if expr.Operator.IsBooleanOperator() {
@@ -65,7 +68,7 @@ func (c *Checker) inferExpression(expr ast.Expression) (tast.Expression, error) 
 		errs := []error{}
 
 		for _, expr := range expr.Expressions {
-			newExpr, err := c.inferExpression(expr)
+			newExpr, err := c.inferExpression(vars, expr)
 			if err != nil {
 				errs = append(errs, err)
 			} else {
@@ -76,7 +79,7 @@ func (c *Checker) inferExpression(expr ast.Expression) (tast.Expression, error) 
 		var returnExpr tast.Expression
 		var returnType types.Type
 		if expr.ReturnExpression != nil {
-			expr, err := c.inferExpression(expr.ReturnExpression)
+			expr, err := c.inferExpression(vars, expr.ReturnExpression)
 			returnExpr = expr
 			if err != nil {
 				errs = append(errs, err)
@@ -95,15 +98,74 @@ func (c *Checker) inferExpression(expr ast.Expression) (tast.Expression, error) 
 		}, errors.Join(errs...)
 
 	case *ast.IfExpression:
-		cond, condErr := c.inferExpression(expr.Condition)
-		then, thenErr := c.inferExpression(expr.Then)
+		cond, condErr := c.inferExpression(vars, expr.Condition)
+		then, thenErr := c.inferExpression(vars, expr.Then)
 
 		if expr.Else != nil {
-			elseExpr, elseErr := c.inferExpression(expr.Else)
+			elseExpr, elseErr := c.inferExpression(vars, expr.Else)
 
 			return &tast.IfExpression{Token: expr.Token, Condition: cond, Then: then, Else: elseExpr, ReturnType: then.Type()}, errors.Join(condErr, thenErr, elseErr)
 		}
 		return &tast.IfExpression{Token: expr.Token, Condition: cond, Then: then, Else: nil, ReturnType: types.Unit}, errors.Join(condErr, thenErr)
+	case *ast.AssignmentExpression:
+		varRef, ok := expr.Lhs.(*ast.VariableReference)
+		if !ok {
+			return &tast.AssignmentExpression{}, c.error(expr.Token, "not a valid assignment target")
+		}
+
+		rhs, err := c.inferExpression(vars, expr.Rhs)
+		if err != nil {
+			return &tast.AssignmentExpression{}, err
+		}
+
+		varRefT, err := c.inferExpression(vars, varRef)
+		return &tast.AssignmentExpression{Lhs: varRefT, Rhs: rhs, Token: expr.Token}, err
+	case *ast.VariableDeclaration:
+		vd := &tast.VariableDeclaration{}
+		var t types.Type
+		var initializingExpr tast.Expression
+
+		if expr.Type != "" {
+			var ok bool
+			t, ok = types.From(expr.Type)
+			if !ok {
+				return vd, c.error(expr.Token, "could not find the type %q", expr.Type)
+			}
+			var err error
+			initializingExpr, err = c.inferExpression(vars, expr.InitializingExpression)
+			if err != nil {
+				return vd, err
+			}
+		} else {
+			var err error
+			initializingExpr, err = c.inferExpression(vars, expr.InitializingExpression)
+			if err != nil {
+				return vd, err
+			}
+
+			t = initializingExpr.Type()
+		}
+
+		vd.VariableType = t
+		vars[expr.Identifier] = t
+
+		vd.InitializingExpression = initializingExpr
+		vd.Token = expr.Token
+		vd.Identifier = expr.Identifier
+		return vd, nil
+	case *ast.VariableReference:
+		vr := &tast.VariableReference{Identifier: expr.Identifier, Token: expr.Token}
+
+		t, ok := vars[expr.Identifier]
+		if !ok {
+			return vr, c.error(expr.Token, "could not get type for variable %q", vr.Identifier)
+		}
+
+		vr.VariableType = t
+
+		return vr, nil
+	default:
+		panic(fmt.Sprintf("unexpected ast.Expression: %#v", expr))
 	}
 	return nil, fmt.Errorf("unhandled expression in type inferer")
 }

@@ -27,7 +27,7 @@ type Lexer struct {
 }
 
 func New(input string, file string) (*Lexer, error) {
-	l := &Lexer{input: input, file: file}
+	l := &Lexer{input: input, file: file, lineCount: 1}
 	if err := l.readChar(); err != nil {
 		return nil, err
 	}

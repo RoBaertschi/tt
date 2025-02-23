@@ -121,6 +121,10 @@ func emitExpression(expr tast.Expression) (Operand, []Instruction) {
 		}
 		instructions = append(instructions, Label(endOfIfLabel))
 		return dst, instructions
+	case *tast.AssignmentExpression:
+	case *tast.VariableDeclaration:
+	case *tast.VariableReference:
+	default:
+		panic(fmt.Sprintf("unexpected tast.Expression: %#v", expr))
 	}
-	panic("unhandled tast.Expression case in ir emitter")
 }

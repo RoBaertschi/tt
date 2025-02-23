@@ -1,5 +1,5 @@
 fn main() = {
-    hi: i64 = 4;
+    hi := 4;
 
     if hi == 2 in hi = 3
     else hi = 2;

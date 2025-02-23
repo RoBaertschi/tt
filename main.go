@@ -59,7 +59,7 @@ func main() {
 		toPrint |= build.PrintIr
 	}
 
-	logger := log.New(os.Stderr, "", log.Lshortfile)
+	_ = log.New(os.Stderr, "", log.Lshortfile)
 
 	backend := asm.Fasm
 	if *qbe {
@@ -68,7 +68,7 @@ func main() {
 
 	err := build.NewSourceProgram(input, output).Build(backend, *emitAsmOnly, build.ToPrintFlags(toPrint))
 	if err != nil {
-		logger.Fatalln(err)
+		os.Stderr.WriteString(fmt.Sprintf("%v\n", err.Error()))
 		term.Exit(1)
 	}
 }

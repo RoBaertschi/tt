@@ -9,6 +9,7 @@ import (
 
 type Node interface {
 	TokenLiteral() string
+	Tok() token.Token
 	String() string
 }
 
@@ -33,6 +34,13 @@ func (p *Program) TokenLiteral() string {
 	return ""
 }
 
+func (p *Program) Tok() token.Token {
+	if len(p.Declarations) > 0 {
+		return p.Declarations[0].Tok()
+	}
+	return token.Token{}
+}
+
 func (p *Program) String() string {
 	var builder strings.Builder
 
@@ -52,6 +60,7 @@ type FunctionDeclaration struct {
 
 func (fd *FunctionDeclaration) declarationNode()     {}
 func (fd *FunctionDeclaration) TokenLiteral() string { return fd.Token.Literal }
+func (fd *FunctionDeclaration) Tok() token.Token     { return fd.Token }
 func (fd *FunctionDeclaration) String() string {
 	return fmt.Sprintf("fn %v() = %v;", fd.Name, fd.Body.String())
 }
@@ -63,6 +72,7 @@ type ErrorExpression struct {
 
 func (e *ErrorExpression) expressionNode()      {}
 func (e *ErrorExpression) TokenLiteral() string { return e.InvalidToken.Literal }
+func (e *ErrorExpression) Tok() token.Token     { return e.InvalidToken }
 func (e *ErrorExpression) String() string       { return "<ERROR EXPR>" }
 
 type IntegerExpression struct {
@@ -72,6 +82,7 @@ type IntegerExpression struct {
 
 func (ie *IntegerExpression) expressionNode()      {}
 func (ie *IntegerExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IntegerExpression) Tok() token.Token     { return ie.Token }
 func (ie *IntegerExpression) String() string       { return ie.Token.Literal }
 
 type BooleanExpression struct {
@@ -81,6 +92,7 @@ type BooleanExpression struct {
 
 func (be *BooleanExpression) expressionNode()      {}
 func (be *BooleanExpression) TokenLiteral() string { return be.Token.Literal }
+func (be *BooleanExpression) Tok() token.Token     { return be.Token }
 func (be *BooleanExpression) String() string       { return be.Token.Literal }
 
 //go:generate stringer -type=BinaryOperator
@@ -137,6 +149,7 @@ type BinaryExpression struct {
 
 func (be *BinaryExpression) expressionNode()      {}
 func (be *BinaryExpression) TokenLiteral() string { return be.Token.Literal }
+func (be *BinaryExpression) Tok() token.Token     { return be.Token }
 func (be *BinaryExpression) String() string {
 	return fmt.Sprintf("(%s %s %s)", be.Lhs, be.Operator.SymbolString(), be.Rhs)
 }
@@ -149,6 +162,7 @@ type BlockExpression struct {
 
 func (be *BlockExpression) expressionNode()      {}
 func (be *BlockExpression) TokenLiteral() string { return be.Token.Literal }
+func (be *BlockExpression) Tok() token.Token     { return be.Token }
 func (be *BlockExpression) String() string {
 	var builder strings.Builder
 
@@ -170,12 +184,13 @@ type IfExpression struct {
 	Token     token.Token // The 'if' token
 	Condition Expression
 	Then      Expression
-	// Can be nil
+	// NOTE: Can be nil
 	Else Expression
 }
 
 func (ie *IfExpression) expressionNode()      {}
 func (ie *IfExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IfExpression) Tok() token.Token     { return ie.Token }
 func (ie *IfExpression) String() string {
 	var builder strings.Builder
 
@@ -200,6 +215,7 @@ type VariableDeclaration struct {
 
 func (vd *VariableDeclaration) expressionNode()      {}
 func (vd *VariableDeclaration) TokenLiteral() string { return vd.Token.Literal }
+func (vd *VariableDeclaration) Tok() token.Token     { return vd.Token }
 func (vd *VariableDeclaration) String() string {
 	return fmt.Sprintf("%s : %v = %s", vd.Identifier, vd.Type, vd.InitializingExpression)
 }
@@ -211,6 +227,7 @@ type VariableReference struct {
 
 func (vr *VariableReference) expressionNode()      {}
 func (vr *VariableReference) TokenLiteral() string { return vr.Token.Literal }
+func (vr *VariableReference) Tok() token.Token     { return vr.Token }
 func (vr *VariableReference) String() string {
 	return fmt.Sprintf("%s", vr.Identifier)
 }
@@ -223,6 +240,7 @@ type AssignmentExpression struct {
 
 func (ae *AssignmentExpression) expressionNode()      {}
 func (ae *AssignmentExpression) TokenLiteral() string { return ae.Token.Literal }
+func (ae *AssignmentExpression) Tok() token.Token     { return ae.Token }
 func (ae *AssignmentExpression) String() string {
 	return fmt.Sprintf("%s = %s", ae.Lhs.String(), ae.Rhs.String())
 }
