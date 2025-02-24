@@ -59,7 +59,7 @@
         in
         {
           default = pkgs.mkShell {
-            buildInputs = with pkgs; [ go gopls gotools go-tools qbe fasm ];
+            buildInputs = with pkgs; [ go gopls gotools go-tools qbe (if system == "x86_64-linux" then [fasm] else []) ];
           };
         });
 
