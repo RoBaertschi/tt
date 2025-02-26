@@ -104,9 +104,10 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 		return []Instruction{JmpInstruction(i)}
 	case *ttir.Copy:
 		return []Instruction{&SimpleInstruction{Opcode: Mov, Lhs: toAsmOperand(i.Dst), Rhs: toAsmOperand(i.Src)}}
+	default:
+		panic(fmt.Sprintf("unexpected ttir.Instruction: %#v", i))
 	}
 
-	return []Instruction{}
 }
 
 func cgBinary(b *ttir.Binary) []Instruction {

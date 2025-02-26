@@ -105,8 +105,11 @@ func emitExpression(expr tast.Expression) (Operand, []Instruction) {
 		instructions = append(instructions, &JumpIfZero{Value: condDst, Label: elseLabel})
 		thenDst, thenInstructions := emitExpression(expr.Then)
 		instructions = append(instructions, thenInstructions...)
-		if !expr.ReturnType.IsSameType(types.Unit) {
-			instructions = append(instructions, &Copy{Src: thenDst, Dst: dst}, Jump(endOfIfLabel))
+		if expr.Else != nil {
+			if !expr.ReturnType.IsSameType(types.Unit) {
+				instructions = append(instructions, &Copy{Src: thenDst, Dst: dst})
+			}
+			instructions = append(instructions, Jump(endOfIfLabel))
 		} else {
 			dst = nil
 		}
@@ -122,8 +125,21 @@ func emitExpression(expr tast.Expression) (Operand, []Instruction) {
 		instructions = append(instructions, Label(endOfIfLabel))
 		return dst, instructions
 	case *tast.AssignmentExpression:
+		ident := expr.Lhs.(*tast.VariableReference)
+
+		rhsDst, instructions := emitExpression(expr.Rhs)
+
+		instructions = append(instructions, &Copy{Src: rhsDst, Dst: &Var{Value: ident.Identifier}})
+
+		return nil, instructions
 	case *tast.VariableDeclaration:
+		rhsDst, instructions := emitExpression(expr.InitializingExpression)
+
+		instructions = append(instructions, &Copy{Src: rhsDst, Dst: &Var{Value: expr.Identifier}})
+
+		return nil, instructions
 	case *tast.VariableReference:
+		return &Var{Value: expr.Identifier}, []Instruction{}
 	default:
 		panic(fmt.Sprintf("unexpected tast.Expression: %#v", expr))
 	}
