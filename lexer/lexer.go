@@ -63,6 +63,8 @@ func (l *Lexer) NextToken() token.Token {
 	tok.Loc = l.loc()
 
 	switch l.ch {
+	case ',':
+		tok = l.newToken(token.Comma)
 	case ';':
 		tok = l.newToken(token.Semicolon)
 	case ':':

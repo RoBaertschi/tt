@@ -29,17 +29,13 @@ func copyScope(s *Scope) Scope {
 		newVars[k] = Var{Name: v.Name, FromCurrentScope: false}
 	}
 
-	return Scope{Variables: newVars}
+	return Scope{Variables: newVars, UniqueId: s.UniqueId}
 }
 
 func (s *Scope) Get(name string) (Var, bool) {
 	v, ok := s.Variables[name]
 
-	if ok {
-		return v, true
-	}
-
-	return Var{}, false
+	return v, ok
 }
 
 func (s *Scope) Set(name string, uniqName string) {
@@ -59,6 +55,18 @@ func (s *Scope) HasInCurrent(name string) bool {
 	return v.FromCurrentScope
 }
 
+func (s *Scope) Uniq(name string) string {
+	uniqName := fmt.Sprintf("%s.%d", name, s.UniqueId)
+	s.UniqueId += 1
+	return uniqName
+}
+
+func (s *Scope) SetUniq(name string) string {
+	uniq := s.Uniq(name)
+	s.Set(name, uniq)
+	return uniq
+}
+
 func VarResolve(p *ast.Program) (map[string]Scope, error) {
 	functionToScope := make(map[string]Scope)
 
@@ -66,6 +74,9 @@ func VarResolve(p *ast.Program) (map[string]Scope, error) {
 		switch d := d.(type) {
 		case *ast.FunctionDeclaration:
 			s := Scope{Variables: make(map[string]Var)}
+			for _, arg := range d.Args {
+				s.SetUniq(arg.Name)
+			}
 			err := VarResolveExpr(&s, d.Body)
 			functionToScope[d.Name] = s
 			if err != nil {
@@ -116,25 +127,25 @@ func VarResolveExpr(s *Scope, e ast.Expression) error {
 			return err
 		}
 
-		err = VarResolveExpr(s, e.Then)
+		thenS := copyScope(s)
+		err = VarResolveExpr(&thenS, e.Then)
 		if err != nil {
 			return err
 		}
 
+		elseS := copyScope(s)
 		if e.Else != nil {
-			err = VarResolveExpr(s, e.Else)
+			err = VarResolveExpr(&elseS, e.Else)
 			if err != nil {
 				return err
 			}
 		}
 	case *ast.VariableDeclaration:
 		if s.HasInCurrent(e.Identifier) {
-			return errorf(e.Token, "variable %q redifinded", e.Identifier)
+			return errorf(e.Token, "variable %q redefined", e.Identifier)
 		}
 
-		uniqName := fmt.Sprintf("%s.%d", e.Identifier, s.UniqueId)
-		s.UniqueId += 1
-		s.Set(e.Identifier, uniqName)
+		s.SetUniq(e.Identifier)
 	case *ast.VariableReference:
 		v, ok := s.Get(e.Identifier)
 		if !ok {

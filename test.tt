@@ -1,9 +1,13 @@
 fn main() = {
     hi := 4;
 
-    if hi == 4 in
+    if hi == 4 {
+        test2 := 3;
         hi = 0 
-    else hi = 1;
+    }
+    else {
+        hi = 1
+    };
 
-    hi
+    test2
 };

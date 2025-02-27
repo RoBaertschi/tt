@@ -178,6 +178,38 @@ func (p *Parser) ParseProgram() *ast.Program {
 	}
 }
 
+func (p *Parser) parseType() (t ast.Type, ok bool) {
+	if ok, _ := p.expect(token.Ident); !ok {
+		return "", false
+	}
+
+	return ast.Type(p.curToken.Literal), true
+}
+
+func (p *Parser) parseArgumentList() ([]ast.Argument, bool) {
+	args := []ast.Argument{}
+
+	for p.peekTokenIs(token.Ident) {
+		p.nextToken()
+		name := p.curToken.Literal
+		p.nextToken()
+		t, ok := p.parseType()
+
+		if !ok {
+			return args, false
+		}
+
+		args = append(args, ast.Argument{Type: t, Name: name})
+
+		if !p.peekTokenIs(token.Comma) {
+			break
+		}
+		p.nextToken()
+	}
+
+	return args, true
+}
+
 func (p *Parser) parseDeclaration() ast.Declaration {
 	if ok, _ := p.expect(token.Fn); !ok {
 		return nil
@@ -191,6 +223,13 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 	if ok, _ := p.expectPeek(token.OpenParen); !ok {
 		return nil
 	}
+
+	args, ok := p.parseArgumentList()
+
+	if !ok {
+		return nil
+	}
+
 	if ok, _ := p.expectPeek(token.CloseParen); !ok {
 		return nil
 	}
@@ -208,6 +247,7 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 		Token: tok,
 		Name:  name,
 		Body:  expr,
+		Args:  args,
 	}
 }
 
@@ -371,7 +411,7 @@ func (p *Parser) parseVariableDeclaration() ast.Expression {
 
 	if p.peekTokenIs(token.Ident) {
 		p.nextToken()
-		variable.Type = p.curToken.Literal
+		variable.Type = ast.Type(p.curToken.Literal)
 	}
 
 	if ok, errExpr := p.expectPeek(token.Equal); !ok {

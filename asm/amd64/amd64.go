@@ -5,6 +5,15 @@ import (
 	"strings"
 )
 
+var callConvArgs map[int]Register = map[int]Register{
+	1: DI,
+	2: SI,
+	3: DX,
+	4: CX,
+	5: R8,
+	6: R9,
+}
+
 type Program struct {
 	Functions    []Function
 	MainFunction *Function
@@ -169,6 +178,12 @@ type Register int
 
 const (
 	AX Register = iota
+	CX
+	DX
+	DI
+	SI
+	R8
+	R9
 	R10
 	R11
 

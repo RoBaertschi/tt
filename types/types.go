@@ -53,7 +53,7 @@ func New(id int64, name string) Type {
 	return typeId
 }
 
-func From(name string) (Type, bool) {
-	t, ok := types[name]
+func From(name ast.Type) (Type, bool) {
+	t, ok := types[string(name)]
 	return t, ok
 }

@@ -30,6 +30,13 @@ func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, erro
 	switch decl := decl.(type) {
 	case *ast.FunctionDeclaration:
 		vars := make(Variables)
+		for _, arg := range decl.Args {
+			t, ok := types.From(arg.Type)
+			if !ok {
+				return nil, c.error(decl.Token, "could not find the type %q for argument %q", arg.Type, arg.Name)
+			}
+			vars[arg.Name] = t
+		}
 		body, err := c.inferExpression(vars, decl.Body)
 		c.functionVariables[decl.Name] = vars
 

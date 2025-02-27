@@ -26,6 +26,11 @@ func (c *Checker) error(t token.Token, format string, args ...any) error {
 }
 
 func (c *Checker) CheckProgram(program *ast.Program) (*tast.Program, error) {
+	_, err := VarResolve(program)
+	if err != nil {
+		return nil, err
+	}
+
 	newProgram, err := c.inferTypes(program)
 	if err != nil {
 		return nil, err

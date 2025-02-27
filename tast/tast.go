@@ -52,10 +52,16 @@ func (p *Program) String() string {
 	return builder.String()
 }
 
+type Argument struct {
+	Name string
+	Type types.Type
+}
+
 type FunctionDeclaration struct {
 	Token      token.Token // The token.FN
 	Body       Expression
 	Name       string
+	Args       []Argument
 	ReturnType types.Type
 }
 

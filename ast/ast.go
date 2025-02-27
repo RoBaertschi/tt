@@ -52,17 +52,35 @@ func (p *Program) String() string {
 	return builder.String()
 }
 
+type Type string
+
+type Argument struct {
+	Name string
+	Type Type
+}
+
 type FunctionDeclaration struct {
 	Token token.Token // The token.FN
 	Body  Expression
 	Name  string
+	Args  []Argument
+}
+
+func ArgsToString(args []Argument) string {
+	var b strings.Builder
+
+	for _, arg := range args {
+		b.WriteString(fmt.Sprintf("%s %s,", arg.Name, arg.Type))
+	}
+
+	return b.String()
 }
 
 func (fd *FunctionDeclaration) declarationNode()     {}
 func (fd *FunctionDeclaration) TokenLiteral() string { return fd.Token.Literal }
 func (fd *FunctionDeclaration) Tok() token.Token     { return fd.Token }
 func (fd *FunctionDeclaration) String() string {
-	return fmt.Sprintf("fn %v() = %v;", fd.Name, fd.Body.String())
+	return fmt.Sprintf("fn %v(%v) = %v;", fd.Name, ArgsToString(fd.Args), fd.Body.String())
 }
 
 // Represents a Expression that we failed to parse
@@ -209,7 +227,7 @@ func (ie *IfExpression) String() string {
 type VariableDeclaration struct {
 	Token                  token.Token // The Identifier token
 	InitializingExpression Expression
-	Type                   string
+	Type                   Type
 	Identifier             string
 }
 

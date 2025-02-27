@@ -33,6 +33,7 @@ const (
 
 	Semicolon  TokenType = ";"
 	Colon      TokenType = ":"
+	Comma      TokenType = ","
 	Equal      TokenType = "="
 	OpenParen  TokenType = "("
 	CloseParen TokenType = ")"
