@@ -8,6 +8,6 @@ fn main() = {
     else {
         hi = 1
     };
-
-    test2
 };
+
+fn test2() = {};

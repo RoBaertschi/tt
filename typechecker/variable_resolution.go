@@ -118,7 +118,9 @@ func VarResolveExpr(s *Scope, e ast.Expression) error {
 		for _, e := range e.Expressions {
 			errs = append(errs, VarResolveExpr(&newS, e))
 		}
-		errs = append(errs, VarResolveExpr(&newS, e.ReturnExpression))
+		if e.ReturnExpression != nil {
+			errs = append(errs, VarResolveExpr(&newS, e.ReturnExpression))
+		}
 
 		return errors.Join(errs...)
 	case *ast.IfExpression:
@@ -145,7 +147,7 @@ func VarResolveExpr(s *Scope, e ast.Expression) error {
 			return errorf(e.Token, "variable %q redefined", e.Identifier)
 		}
 
-		s.SetUniq(e.Identifier)
+		e.Identifier = s.SetUniq(e.Identifier)
 	case *ast.VariableReference:
 		v, ok := s.Get(e.Identifier)
 		if !ok {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime/debug"
 	"slices"
 	"strings"
 
@@ -149,7 +150,7 @@ func build(outputWriter io.Writer, input string, output string, toPrint ToPrintF
 
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			err = fmt.Errorf("panic in build: %#v", panicErr)
+			err = fmt.Errorf("panic in build: %#v\n%s", panicErr, debug.Stack())
 		}
 	}()
 

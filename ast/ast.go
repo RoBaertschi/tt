@@ -173,9 +173,12 @@ func (be *BinaryExpression) String() string {
 }
 
 type BlockExpression struct {
-	Token            token.Token // The '{'
-	Expressions      []Expression
-	ReturnExpression Expression // A expression that does not end with a semicolon, there can only be one of those and it hast to be at the end
+	Token       token.Token // The '{'
+	Expressions []Expression
+	// NOTE: Nullable
+	//
+	// A expression that does not end with a semicolon, there can only be one of those and it has to be at the end
+	ReturnExpression Expression
 }
 
 func (be *BlockExpression) expressionNode()      {}
