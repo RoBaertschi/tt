@@ -3,9 +3,8 @@
 ## Syntax
 
 ```tt
-// Return type is i64
 fn main() = {
-    i : = 3;
+    i := 3;
     i
 };
 ```

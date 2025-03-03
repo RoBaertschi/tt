@@ -260,8 +260,8 @@ func runTasks(nodes map[int]*node, rootNodes []int, l *utils.Logger) error {
 		if done[id] != notStarted {
 			panic(fmt.Sprintf("tried starting task %d twice", id))
 		}
-		l.Debugf("executing task %d", id)
 		node := nodes[id]
+		l.Debugf("executing task %d %q", id, node.task.Name())
 		output[id] = &strings.Builder{}
 		go node.task.Run(id, output[id], doneChan)
 		running = append(running, id)
@@ -299,7 +299,7 @@ func runTasks(nodes map[int]*node, rootNodes []int, l *utils.Logger) error {
 	for !allFinished {
 		select {
 		case result := <-doneChan:
-			l.Debugf("task %d is done with err: %v", result.Id, result.Err)
+			l.Debugf("task %d %q is done with err: %v", result.Id, nodes[result.Id].task.Name(), result.Err)
 			for i, id := range running {
 				if id == result.Id {
 					running = slices.Delete(running, i, i+1)

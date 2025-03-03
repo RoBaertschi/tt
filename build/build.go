@@ -47,7 +47,7 @@ func (sp *SourceProgram) Build(backend asm.Backend, emitAsmOnly bool, toPrint To
 	id := 0
 
 	addRootNode := func(task task) int {
-		l.Debugf("registering root task %d", id)
+		l.Debugf("registering root task %d %q", id, task.Name())
 		node := &node{task: task}
 		nodes[id] = node
 		rootNodes = append(rootNodes, id)
@@ -56,7 +56,7 @@ func (sp *SourceProgram) Build(backend asm.Backend, emitAsmOnly bool, toPrint To
 	}
 
 	addNode := func(task task, deps ...int) int {
-		l.Debugf("registering task %d", id)
+		l.Debugf("registering task %d %q", id, task.Name())
 		if len(deps) <= 0 {
 			panic("node without dep is useless")
 		}

@@ -192,6 +192,9 @@ func (p *Parser) parseArgumentList() ([]ast.Argument, bool) {
 	for p.peekTokenIs(token.Ident) {
 		p.nextToken()
 		name := p.curToken.Literal
+		if ok, _ := p.expectPeek(token.Colon); !ok {
+			return args, false
+		}
 		p.nextToken()
 		t, ok := p.parseType()
 

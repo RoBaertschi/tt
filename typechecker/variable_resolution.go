@@ -73,6 +73,11 @@ func VarResolve(p *ast.Program) (map[string]Scope, error) {
 	for _, d := range p.Declarations {
 		switch d := d.(type) {
 		case *ast.FunctionDeclaration:
+			_, ok := functionToScope[d.Name]
+			if ok {
+				return functionToScope, errorf(d.Token, "duplicate function name %q", d.Name)
+			}
+
 			s := Scope{Variables: make(map[string]Var)}
 			for _, arg := range d.Args {
 				s.SetUniq(arg.Name)
