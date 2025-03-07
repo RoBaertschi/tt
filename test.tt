@@ -8,10 +8,7 @@ fn main() = {
     }
 };
 
-fn test2(hello: i32,) = {
-    hello
+fn test2(hello: i64,) = {
+    hello // Comment test
 };
 
-fn test2(hello: i32,) = {
-    hello
-};

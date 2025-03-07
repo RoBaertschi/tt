@@ -22,6 +22,7 @@ func (p *Program) String() string {
 
 type Function struct {
 	Name           string
+	Arguments      []string
 	Instructions   []Instruction
 	HasReturnValue bool
 }

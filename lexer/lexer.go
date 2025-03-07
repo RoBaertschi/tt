@@ -110,6 +110,12 @@ func (l *Lexer) NextToken() token.Token {
 	case '*':
 		tok = l.newToken(token.Asterisk)
 	case '/':
+		if l.peekByte() == '/' {
+			for l.ch != '\n' {
+				l.readChar()
+			}
+			return l.NextToken()
+		}
 		tok = l.newToken(token.Slash)
 	case '{':
 		tok = l.newToken(token.OpenBrack)

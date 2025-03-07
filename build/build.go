@@ -40,7 +40,7 @@ func NewSourceProgram(inputFile string, outputFile string) *SourceProgram {
 }
 
 func (sp *SourceProgram) Build(backend asm.Backend, emitAsmOnly bool, toPrint ToPrintFlags) error {
-	l := utils.NewLogger(os.Stderr, "[build] ", utils.Info)
+	l := utils.NewLogger(os.Stderr, "[build] ", utils.Debug)
 
 	nodes := make(map[int]*node)
 	rootNodes := []int{}
