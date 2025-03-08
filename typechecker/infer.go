@@ -30,12 +30,14 @@ func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, erro
 	switch decl := decl.(type) {
 	case *ast.FunctionDeclaration:
 		vars := make(Variables)
+		arguments := []tast.Argument{}
 		for _, arg := range decl.Args {
 			t, ok := types.From(arg.Type)
 			if !ok {
 				return nil, c.error(decl.Token, "could not find the type %q for argument %q", arg.Type, arg.Name)
 			}
 			vars[arg.Name] = t
+			arguments = append(arguments, tast.Argument{Name: arg.Name, Type: t})
 		}
 		body, err := c.inferExpression(vars, decl.Body)
 		c.functionVariables[decl.Name] = vars
@@ -44,7 +46,7 @@ func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, erro
 			return nil, err
 		}
 
-		return &tast.FunctionDeclaration{Token: decl.Token, Body: body, ReturnType: body.Type(), Name: decl.Name}, nil
+		return &tast.FunctionDeclaration{Token: decl.Token, Args: arguments, Body: body, ReturnType: body.Type(), Name: decl.Name}, nil
 	}
 	return nil, errors.New("unhandled declaration in type inferer")
 }

@@ -57,6 +57,16 @@ type Argument struct {
 	Type types.Type
 }
 
+func ArgsToString(args []Argument) string {
+	var b strings.Builder
+
+	for _, arg := range args {
+		b.WriteString(fmt.Sprintf("%s %s,", arg.Name, arg.Type.Name()))
+	}
+
+	return b.String()
+}
+
 type FunctionDeclaration struct {
 	Token      token.Token // The token.FN
 	Body       Expression
@@ -71,7 +81,7 @@ func (fd *FunctionDeclaration) declarationNode()     {}
 func (fd *FunctionDeclaration) TokenLiteral() string { return fd.Token.Literal }
 func (fd *FunctionDeclaration) Tok() token.Token     { return fd.Token }
 func (fd *FunctionDeclaration) String() string {
-	return fmt.Sprintf("fn %v(): %v = %v;", fd.Name, fd.ReturnType.Name(), fd.Body.String())
+	return fmt.Sprintf("fn %v(%v): %v = %v;", fd.Name, ArgsToString(fd.Args), fd.ReturnType.Name(), fd.Body.String())
 }
 
 type IntegerExpression struct {

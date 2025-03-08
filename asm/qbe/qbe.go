@@ -3,6 +3,7 @@ package qbe
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/ttir"
@@ -64,7 +65,18 @@ func emitFunction(w io.Writer, f *ttir.Function) error {
 			return err
 		}
 	}
-	if err := emitf(w, "$%s() {\n@start\n", f.Name); err != nil {
+
+	b := strings.Builder{}
+
+	for i, arg := range f.Arguments {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString("l %")
+		b.WriteString(arg)
+	}
+
+	if err := emitf(w, "$%s(%v) {\n@start\n", f.Name, b.String()); err != nil {
 		return err
 	}
 	for _, i := range f.Instructions {

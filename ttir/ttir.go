@@ -29,7 +29,11 @@ type Function struct {
 
 func (f *Function) String() string {
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("fn %s\n", f.Name))
+	builder.WriteString(fmt.Sprintf("fn %s", f.Name))
+	for _, arg := range f.Arguments {
+		builder.WriteString(" " + arg)
+	}
+	builder.WriteRune('\n')
 	for _, i := range f.Instructions {
 		builder.WriteString("  ")
 		builder.WriteString(i.String())

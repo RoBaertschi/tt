@@ -44,6 +44,24 @@ func CgProgram(prog *ttir.Program) *Program {
 func cgFunction(f *ttir.Function) Function {
 	newInstructions := []Instruction{}
 
+	for i, arg := range f.Arguments {
+		if i < len(callConvArgs) {
+			newInstructions = append(newInstructions, &SimpleInstruction{
+				Opcode: Mov,
+				Lhs:    Pseudo(arg),
+				Rhs:    Register(callConvArgs[i]),
+			})
+		} else {
+			newInstructions = append(newInstructions,
+				&SimpleInstruction{
+					Opcode: Mov,
+					Lhs:    Pseudo(arg),
+					Rhs:    Stack(16 + (8 * (i - len(callConvArgs)))),
+				},
+			)
+		}
+	}
+
 	for _, inst := range f.Instructions {
 		newInstructions = append(newInstructions, cgInstruction(inst)...)
 	}

@@ -44,9 +44,17 @@ func EmitProgram(program *tast.Program) *Program {
 func emitFunction(function *tast.FunctionDeclaration) *Function {
 	value, instructions := emitExpression(function.Body)
 	instructions = append(instructions, &Ret{Op: value})
+
+	arguments := []string{}
+
+	for _, arg := range function.Args {
+		arguments = append(arguments, arg.Name)
+	}
+
 	f := &Function{
 		Name:           function.Name,
 		Instructions:   instructions,
+		Arguments:      arguments,
 		HasReturnValue: !function.ReturnType.IsSameType(types.Unit),
 	}
 
