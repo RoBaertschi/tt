@@ -1,11 +1,14 @@
 fn main() = {
     i := 5;
 
+
     if i == 5 {
         0
     } else {
         1
-    }
+    };
+
+    test2(3)
 };
 
 fn test2(hello: i64) = {

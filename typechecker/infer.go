@@ -31,13 +31,13 @@ func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, erro
 	case *ast.FunctionDeclaration:
 		vars := make(Variables)
 		arguments := []tast.Argument{}
-		for _, arg := range decl.Args {
-			t, ok := types.From(arg.Type)
+		for _, param := range decl.Parameters {
+			t, ok := types.From(param.Type)
 			if !ok {
-				return nil, c.error(decl.Token, "could not find the type %q for argument %q", arg.Type, arg.Name)
+				return nil, c.error(decl.Token, "could not find the type %q for argument %q", param.Type, param.Name)
 			}
-			vars[arg.Name] = t
-			arguments = append(arguments, tast.Argument{Name: arg.Name, Type: t})
+			vars[param.Name] = t
+			arguments = append(arguments, tast.Argument{Name: param.Name, Type: t})
 		}
 		body, err := c.inferExpression(vars, decl.Body)
 		c.functionVariables[decl.Name] = vars

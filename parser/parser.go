@@ -186,23 +186,23 @@ func (p *Parser) parseType() (t ast.Type, ok bool) {
 	return ast.Type(p.curToken.Literal), true
 }
 
-func (p *Parser) parseArgumentList() ([]ast.Argument, bool) {
-	args := []ast.Argument{}
+func (p *Parser) parseParameterList() ([]ast.Parameter, bool) {
+	parameters := []ast.Parameter{}
 
 	for p.peekTokenIs(token.Ident) {
 		p.nextToken()
 		name := p.curToken.Literal
 		if ok, _ := p.expectPeek(token.Colon); !ok {
-			return args, false
+			return parameters, false
 		}
 		p.nextToken()
 		t, ok := p.parseType()
 
 		if !ok {
-			return args, false
+			return parameters, false
 		}
 
-		args = append(args, ast.Argument{Type: t, Name: name})
+		parameters = append(parameters, ast.Parameter{Type: t, Name: name})
 
 		if !p.peekTokenIs(token.Comma) {
 			break
@@ -210,7 +210,7 @@ func (p *Parser) parseArgumentList() ([]ast.Argument, bool) {
 		p.nextToken()
 	}
 
-	return args, true
+	return parameters, true
 }
 
 func (p *Parser) parseDeclaration() ast.Declaration {
@@ -227,7 +227,7 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 		return nil
 	}
 
-	args, ok := p.parseArgumentList()
+	params, ok := p.parseParameterList()
 
 	if !ok {
 		return nil
@@ -247,10 +247,10 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 	}
 
 	return &ast.FunctionDeclaration{
-		Token: tok,
-		Name:  name,
-		Body:  expr,
-		Args:  args,
+		Token:      tok,
+		Name:       name,
+		Body:       expr,
+		Parameters: params,
 	}
 }
 
@@ -390,6 +390,8 @@ func (p *Parser) parseVariable() ast.Expression {
 	switch p.peekToken.Type {
 	case token.Colon:
 		return p.parseVariableDeclaration()
+	case token.OpenParen:
+		return p.parseFunctionCall()
 	default:
 		return &ast.VariableReference{
 			Token:      p.curToken,
@@ -425,6 +427,32 @@ func (p *Parser) parseVariableDeclaration() ast.Expression {
 	variable.InitializingExpression = p.parseExpression(PrecLowest)
 
 	return variable
+}
+
+func (p *Parser) parseFunctionCall() ast.Expression {
+	if ok, errExpr := p.expect(token.Ident); !ok {
+		return errExpr
+	}
+
+	funcCall := &ast.FunctionCall{Token: p.curToken, Identifier: p.curToken.Literal}
+	if ok, errExpr := p.expectPeek(token.OpenParen); !ok {
+		return errExpr
+	}
+
+	args := []ast.Expression{}
+
+	for !p.peekTokenIs(token.CloseParen) {
+		p.nextToken()
+
+		args = append(args, p.parseExpression(PrecLowest))
+	}
+
+	// Move onto the ')'
+	p.nextToken()
+
+	funcCall.Arguments = args
+
+	return funcCall
 }
 
 // Binary

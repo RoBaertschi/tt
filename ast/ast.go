@@ -54,19 +54,19 @@ func (p *Program) String() string {
 
 type Type string
 
-type Argument struct {
+type Parameter struct {
 	Name string
 	Type Type
 }
 
 type FunctionDeclaration struct {
-	Token token.Token // The token.FN
-	Body  Expression
-	Name  string
-	Args  []Argument
+	Token      token.Token // The token.FN
+	Body       Expression
+	Name       string
+	Parameters []Parameter
 }
 
-func ArgsToString(args []Argument) string {
+func ArgsToString(args []Parameter) string {
 	var b strings.Builder
 
 	for _, arg := range args {
@@ -80,7 +80,7 @@ func (fd *FunctionDeclaration) declarationNode()     {}
 func (fd *FunctionDeclaration) TokenLiteral() string { return fd.Token.Literal }
 func (fd *FunctionDeclaration) Tok() token.Token     { return fd.Token }
 func (fd *FunctionDeclaration) String() string {
-	return fmt.Sprintf("fn %v(%v) = %v;", fd.Name, ArgsToString(fd.Args), fd.Body.String())
+	return fmt.Sprintf("fn %v(%v) = %v;", fd.Name, ArgsToString(fd.Parameters), fd.Body.String())
 }
 
 // Represents a Expression that we failed to parse
@@ -264,4 +264,32 @@ func (ae *AssignmentExpression) TokenLiteral() string { return ae.Token.Literal 
 func (ae *AssignmentExpression) Tok() token.Token     { return ae.Token }
 func (ae *AssignmentExpression) String() string {
 	return fmt.Sprintf("%s = %s", ae.Lhs.String(), ae.Rhs.String())
+}
+
+// identifier ( expressions... )
+type FunctionCall struct {
+	Token      token.Token // The identifier
+	Identifier string
+	Arguments  []Expression
+}
+
+func (fc *FunctionCall) expressionNode()      {}
+func (fc *FunctionCall) TokenLiteral() string { return fc.Token.Literal }
+func (fc *FunctionCall) Tok() token.Token     { return fc.Token }
+func (fc *FunctionCall) String() string {
+	b := strings.Builder{}
+
+	b.WriteString(fc.Identifier)
+	b.WriteRune('(')
+
+	for i, arg := range fc.Arguments {
+		b.WriteString(arg.String())
+		if i < (len(fc.Arguments) - 1) {
+			b.WriteRune(',')
+		}
+	}
+
+	b.WriteRune(')')
+
+	return b.String()
 }

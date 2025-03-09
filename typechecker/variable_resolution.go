@@ -79,9 +79,9 @@ func VarResolve(p *ast.Program) (map[string]Scope, error) {
 			}
 
 			s := Scope{Variables: make(map[string]Var)}
-			for i, arg := range d.Args {
-				uniq := s.SetUniq(arg.Name)
-				d.Args[i].Name = uniq
+			for i, param := range d.Parameters {
+				uniq := s.SetUniq(param.Name)
+				d.Parameters[i].Name = uniq
 			}
 			err := VarResolveExpr(&s, d.Body)
 			functionToScope[d.Name] = s

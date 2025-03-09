@@ -5,14 +5,21 @@ Playground for language design dessisions
 ## Function Calls
 
 ```tt
-fn hi(hello: i32) = {
-    3
+fn hi(arg1: i32, arg2: i32) = {
+    arg1 + 
+    // Hi
+        arg2
 };
 
 fn main() = {
-    hi!;
-    hi();
-    hi;
+
+    // Args
+
+    arg1 := 2;
+    arg2 := 2;
+
+    //hi(arg1, arg2) |> hi(arg2);
+    //hi(arg1, arg2) |> hi(arg1, |);
 };
 
 ```
