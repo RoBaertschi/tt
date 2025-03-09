@@ -1,7 +1,8 @@
 # ml2 ts=2 sts=2 sw=2
-{buildGoModule, version}: buildGoModule {
+{buildGoModule, version ? "HEAD"}: buildGoModule {
   pname = "tt";
   inherit version;
+
   # In 'nix develop', we don't need a copy of the source tree
   # in the Nix store.
   src = ./..;
