@@ -1,5 +1,9 @@
 # ml2 ts=2 sts=2 sw=2
-{buildGoModule, version ? "HEAD"}: buildGoModule {
+{
+  buildGoModule,
+  version ? "HEAD",
+}:
+buildGoModule {
   pname = "tt";
   inherit version;
 
