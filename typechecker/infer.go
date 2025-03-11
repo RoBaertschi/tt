@@ -30,15 +30,16 @@ func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, erro
 	switch decl := decl.(type) {
 	case *ast.FunctionDeclaration:
 		vars := make(Variables)
-		arguments := []tast.Argument{}
+		parameters := []tast.Parameter{}
 		for _, param := range decl.Parameters {
 			t, ok := types.From(param.Type)
 			if !ok {
 				return nil, c.error(decl.Token, "could not find the type %q for argument %q", param.Type, param.Name)
 			}
 			vars[param.Name] = t
-			arguments = append(arguments, tast.Argument{Name: param.Name, Type: t})
+			parameters = append(parameters, tast.Parameter{Name: param.Name, Type: t})
 		}
+		// vars[decl.Name] = &types.FunctionType{ReturnType: }
 		body, err := c.inferExpression(vars, decl.Body)
 		c.functionVariables[decl.Name] = vars
 
@@ -46,7 +47,7 @@ func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, erro
 			return nil, err
 		}
 
-		return &tast.FunctionDeclaration{Token: decl.Token, Args: arguments, Body: body, ReturnType: body.Type(), Name: decl.Name}, nil
+		return &tast.FunctionDeclaration{Token: decl.Token, Args: parameters, Body: body, ReturnType: body.Type(), Name: decl.Name}, nil
 	}
 	return nil, errors.New("unhandled declaration in type inferer")
 }
@@ -173,6 +174,13 @@ func (c *Checker) inferExpression(vars Variables, expr ast.Expression) (tast.Exp
 		vr.VariableType = t
 
 		return vr, nil
+	case *ast.FunctionCall:
+		fc := &tast.FunctionCall{Identifier: expr.Identifier, Token: expr.Token}
+
+		t, ok := vars[expr.Identifier]
+		if !ok {
+			return fc, c.error(expr.Token, "could not get type for function %q", fc.Identifier)
+		}
 	default:
 		panic(fmt.Sprintf("unexpected ast.Expression: %#v", expr))
 	}

@@ -6,9 +6,8 @@ Playground for language design dessisions
 
 ```tt
 fn hi(arg1: i32, arg2: i32) = {
-    arg1 + 
+    arg1 + arg2
     // Hi
-        arg2
 };
 
 fn main() = {

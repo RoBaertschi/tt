@@ -79,6 +79,7 @@ func VarResolve(p *ast.Program) (map[string]Scope, error) {
 			}
 
 			s := Scope{Variables: make(map[string]Var)}
+			s.Set(d.Name, d.Name)
 			for i, param := range d.Parameters {
 				uniq := s.SetUniq(param.Name)
 				d.Parameters[i].Name = uniq
@@ -163,6 +164,15 @@ func VarResolveExpr(s *Scope, e ast.Expression) error {
 		e.Identifier = v.Name
 	case *ast.BooleanExpression:
 	case *ast.IntegerExpression:
+	case *ast.FunctionCall:
+		newName, ok := s.Get(e.Identifier)
+		if !ok {
+			return errorf(e.Token, "function %q not found", e.Identifier)
+		}
+		for _, arg := range e.Arguments {
+			VarResolveExpr(s, arg)
+		}
+		e.Identifier = newName.Name
 	default:
 		panic(fmt.Sprintf("unexpected ast.Expression: %#v", e))
 	}

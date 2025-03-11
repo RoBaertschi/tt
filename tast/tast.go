@@ -252,3 +252,35 @@ func (ae *AssignmentExpression) Tok() token.Token     { return ae.Token }
 func (ae *AssignmentExpression) String() string {
 	return fmt.Sprintf("%s = %s", ae.Lhs.String(), ae.Rhs.String())
 }
+
+// identifier ( expressions... )
+type FunctionCall struct {
+	Token      token.Token // The identifier
+	Identifier string
+	Arguments  []Expression
+	ReturnType types.Type
+}
+
+var _ Expression = &FunctionCall{}
+
+func (fc *FunctionCall) expressionNode()      {}
+func (fc *FunctionCall) Type() types.Type     { return fc.ReturnType }
+func (fc *FunctionCall) TokenLiteral() string { return fc.Token.Literal }
+func (fc *FunctionCall) Tok() token.Token     { return fc.Token }
+func (fc *FunctionCall) String() string {
+	b := strings.Builder{}
+
+	b.WriteString(fc.Identifier)
+	b.WriteRune('(')
+
+	for i, arg := range fc.Arguments {
+		b.WriteString(arg.String())
+		if i < (len(fc.Arguments) - 1) {
+			b.WriteRune(',')
+		}
+	}
+
+	b.WriteRune(')')
+
+	return b.String()
+}

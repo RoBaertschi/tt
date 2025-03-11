@@ -1,6 +1,10 @@
 package types
 
-import "robaertschi.xyz/robaertschi/tt/ast"
+import (
+	"strings"
+
+	"robaertschi.xyz/robaertschi/tt/ast"
+)
 
 type Type interface {
 	// Checks if the two types are the same
@@ -43,6 +47,51 @@ func (ti *TypeId) IsSameType(t Type) bool {
 
 func (ti *TypeId) Name() string {
 	return ti.name
+}
+
+type FunctionType struct {
+	ReturnType Type
+	Parameters []Type
+}
+
+func (ft *FunctionType) SupportsBinaryOperator(op ast.BinaryOperator) bool {
+	return false
+}
+
+func (ft *FunctionType) IsSameType(t Type) bool {
+	if ft2, ok := t.(*FunctionType); ok {
+		if !ft.ReturnType.IsSameType(ft2.ReturnType) {
+			return false
+		}
+
+		if len(ft.Parameters) != len(ft2.Parameters) {
+			return false
+		}
+
+		for i, t := range ft.Parameters {
+			if !t.IsSameType(ft2.Parameters[i]) {
+				return false
+			}
+		}
+	}
+	return false
+}
+
+func (ft *FunctionType) Name() string {
+	b := strings.Builder{}
+
+	b.WriteString("fn(")
+
+	for i, param := range ft.Parameters {
+		b.WriteString(param.Name())
+		if i < (len(ft.Parameters) - 1) {
+			b.WriteRune(',')
+		}
+	}
+
+	b.WriteString("): " + ft.ReturnType.Name())
+
+	return b.String()
 }
 
 var types map[string]Type = make(map[string]Type)
