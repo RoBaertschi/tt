@@ -47,7 +47,7 @@ func emitFunction(function *tast.FunctionDeclaration) *Function {
 
 	arguments := []string{}
 
-	for _, arg := range function.Args {
+	for _, arg := range function.Parameters {
 		arguments = append(arguments, arg.Name)
 	}
 

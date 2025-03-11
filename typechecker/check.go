@@ -12,6 +12,16 @@ import (
 
 type Variables map[string]types.Type
 
+func copyVars(vars Variables) Variables {
+	newVars := make(Variables)
+
+	for k, v := range vars {
+		newVars[k] = v
+	}
+
+	return newVars
+}
+
 type Checker struct {
 	foundMain         bool
 	functionVariables map[string]Variables
@@ -152,6 +162,22 @@ func (c *Checker) checkExpression(vars Variables, expr tast.Expression) error {
 		return nil
 	case *tast.VariableReference:
 		return nil
+	case *tast.FunctionCall:
+		functionType := vars[expr.Identifier].(*types.FunctionType)
+		if len(expr.Arguments) != len(functionType.Parameters) {
+			return c.error(expr.Token, "invalid amount of arguments for function %q, expected %d but got %d", expr.Identifier, len(functionType.Parameters), len(expr.Arguments))
+		}
+
+		errs := []error{}
+
+		for i, param := range functionType.Parameters {
+			e := expr.Arguments[i]
+			if !e.Type().IsSameType(param) {
+				errs = append(errs, c.error(e.Tok(), "invalid type for parameter, expected %q but got %q", param.Name(), e.Type().Name()))
+			}
+		}
+
+		return errors.Join(errs...)
 	default:
 		panic(fmt.Sprintf("unexpected tast.Expression: %#v", expr))
 	}

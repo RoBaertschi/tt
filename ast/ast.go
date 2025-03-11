@@ -64,9 +64,10 @@ type FunctionDeclaration struct {
 	Body       Expression
 	Name       string
 	Parameters []Parameter
+	ReturnType Type
 }
 
-func ArgsToString(args []Parameter) string {
+func ParamsToString(args []Parameter) string {
 	var b strings.Builder
 
 	for _, arg := range args {
@@ -80,7 +81,7 @@ func (fd *FunctionDeclaration) declarationNode()     {}
 func (fd *FunctionDeclaration) TokenLiteral() string { return fd.Token.Literal }
 func (fd *FunctionDeclaration) Tok() token.Token     { return fd.Token }
 func (fd *FunctionDeclaration) String() string {
-	return fmt.Sprintf("fn %v(%v) = %v;", fd.Name, ArgsToString(fd.Parameters), fd.Body.String())
+	return fmt.Sprintf("fn %v(%v): %v = %v;", fd.Name, ParamsToString(fd.Parameters), fd.ReturnType, fd.Body.String())
 }
 
 // Represents a Expression that we failed to parse

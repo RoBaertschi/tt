@@ -13,9 +13,41 @@ func (c *Checker) inferTypes(program *ast.Program) (*tast.Program, error) {
 	c.functionVariables = make(map[string]Variables)
 	decls := []tast.Declaration{}
 	errs := []error{}
+	vars := make(Variables)
+
+	funcToParams := make(map[string][]tast.Parameter)
 
 	for _, decl := range program.Declarations {
-		decl, err := c.inferDeclaration(decl)
+		switch decl := decl.(type) {
+		case *ast.FunctionDeclaration:
+			parameters := []tast.Parameter{}
+			for _, param := range decl.Parameters {
+				t, ok := types.From(param.Type)
+				if !ok {
+					return nil, c.error(decl.Token, "could not find the type %q for argument %q", param.Type, param.Name)
+				}
+				vars[param.Name] = t
+				parameters = append(parameters, tast.Parameter{Name: param.Name, Type: t})
+			}
+
+			t, ok := types.From(decl.ReturnType)
+			if !ok {
+				return nil, c.error(decl.Token, "invalid type %q", decl.ReturnType)
+			}
+
+			parameterTypes := []types.Type{}
+
+			for _, param := range parameters {
+				parameterTypes = append(parameterTypes, param.Type)
+			}
+
+			vars[decl.Name] = &types.FunctionType{ReturnType: t, Parameters: parameterTypes}
+			funcToParams[decl.Name] = parameters
+		}
+	}
+
+	for _, decl := range program.Declarations {
+		decl, err := c.inferDeclaration(funcToParams, copyVars(vars), decl)
 		if err == nil {
 			decls = append(decls, decl)
 		} else {
@@ -26,20 +58,9 @@ func (c *Checker) inferTypes(program *ast.Program) (*tast.Program, error) {
 	return &tast.Program{Declarations: decls}, errors.Join(errs...)
 }
 
-func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, error) {
+func (c *Checker) inferDeclaration(funcToParams map[string][]tast.Parameter, vars Variables, decl ast.Declaration) (tast.Declaration, error) {
 	switch decl := decl.(type) {
 	case *ast.FunctionDeclaration:
-		vars := make(Variables)
-		parameters := []tast.Parameter{}
-		for _, param := range decl.Parameters {
-			t, ok := types.From(param.Type)
-			if !ok {
-				return nil, c.error(decl.Token, "could not find the type %q for argument %q", param.Type, param.Name)
-			}
-			vars[param.Name] = t
-			parameters = append(parameters, tast.Parameter{Name: param.Name, Type: t})
-		}
-		// vars[decl.Name] = &types.FunctionType{ReturnType: }
 		body, err := c.inferExpression(vars, decl.Body)
 		c.functionVariables[decl.Name] = vars
 
@@ -47,7 +68,7 @@ func (c *Checker) inferDeclaration(decl ast.Declaration) (tast.Declaration, erro
 			return nil, err
 		}
 
-		return &tast.FunctionDeclaration{Token: decl.Token, Args: parameters, Body: body, ReturnType: body.Type(), Name: decl.Name}, nil
+		return &tast.FunctionDeclaration{Token: decl.Token, Parameters: funcToParams[decl.Name], Body: body, ReturnType: vars[decl.Name], Name: decl.Name}, nil
 	}
 	return nil, errors.New("unhandled declaration in type inferer")
 }
@@ -181,6 +202,30 @@ func (c *Checker) inferExpression(vars Variables, expr ast.Expression) (tast.Exp
 		if !ok {
 			return fc, c.error(expr.Token, "could not get type for function %q", fc.Identifier)
 		}
+
+		funcType, ok := t.(*types.FunctionType)
+		if !ok {
+			return fc, c.error(expr.Token, "tried to call non function variable %q with type %q", expr.Identifier, t.Name())
+		}
+
+		fc.ReturnType = funcType.ReturnType
+
+		args := []tast.Expression{}
+		errs := []error{}
+
+		for _, arg := range expr.Arguments {
+			inferredArg, err := c.inferExpression(vars, arg)
+			errs = append(errs, err)
+
+			if err == nil {
+				args = append(args, inferredArg)
+			}
+		}
+
+		fc.Arguments = args
+
+		return fc, errors.Join(errs...)
+
 	default:
 		panic(fmt.Sprintf("unexpected ast.Expression: %#v", expr))
 	}

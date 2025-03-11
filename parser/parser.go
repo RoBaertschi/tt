@@ -236,6 +236,14 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 	if ok, _ := p.expectPeek(token.CloseParen); !ok {
 		return nil
 	}
+	if ok, _ := p.expectPeek(token.Colon); !ok {
+		return nil
+	}
+	p.nextToken()
+	t, ok := p.parseType()
+	if !ok {
+		return nil
+	}
 	if ok, _ := p.expectPeek(token.Equal); !ok {
 		return nil
 	}
@@ -251,6 +259,7 @@ func (p *Parser) parseDeclaration() ast.Declaration {
 		Name:       name,
 		Body:       expr,
 		Parameters: params,
+		ReturnType: t,
 	}
 }
 

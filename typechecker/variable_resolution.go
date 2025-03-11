@@ -69,6 +69,15 @@ func (s *Scope) SetUniq(name string) string {
 
 func VarResolve(p *ast.Program) (map[string]Scope, error) {
 	functionToScope := make(map[string]Scope)
+	functions := Scope{Variables: make(map[string]Var)}
+
+	for _, d := range p.Declarations {
+		switch d := d.(type) {
+		case *ast.FunctionDeclaration:
+			functions.Set(d.Name, d.Name)
+		default:
+		}
+	}
 
 	for _, d := range p.Declarations {
 		switch d := d.(type) {
@@ -78,8 +87,7 @@ func VarResolve(p *ast.Program) (map[string]Scope, error) {
 				return functionToScope, errorf(d.Token, "duplicate function name %q", d.Name)
 			}
 
-			s := Scope{Variables: make(map[string]Var)}
-			s.Set(d.Name, d.Name)
+			s := copyScope(&functions)
 			for i, param := range d.Parameters {
 				uniq := s.SetUniq(param.Name)
 				d.Parameters[i].Name = uniq
