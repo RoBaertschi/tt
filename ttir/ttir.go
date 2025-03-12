@@ -116,6 +116,29 @@ func (l Label) String() string {
 }
 func (l Label) instruction() {}
 
+type Call struct {
+	Label       string
+	Arguments   []Operand
+	ReturnValue Operand
+}
+
+func (c *Call) String() string {
+	b := strings.Builder{}
+
+	b.WriteString(c.ReturnValue.String() + " = call " + c.Label + " ")
+
+	for i, arg := range c.Arguments {
+		b.WriteString(arg.String())
+
+		if i < (len(c.Arguments) - 1) {
+			b.WriteString(", ")
+		}
+	}
+
+	return b.String()
+}
+func (c *Call) instruction() {}
+
 type Operand interface {
 	String() string
 	operand()
