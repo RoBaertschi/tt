@@ -2,6 +2,7 @@ package amd64
 
 import (
 	"fmt"
+	"slices"
 
 	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/ttir"
@@ -122,6 +123,67 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 		return []Instruction{JmpInstruction(i)}
 	case *ttir.Copy:
 		return []Instruction{&SimpleInstruction{Opcode: Mov, Lhs: toAsmOperand(i.Dst), Rhs: toAsmOperand(i.Src)}}
+	case *ttir.Call:
+		registerArgs := i.Arguments[0:min(len(callConvArgs), len(i.Arguments))]
+		stackArgs := []ttir.Operand{}
+		if len(callConvArgs) < len(i.Arguments) {
+			stackArgs = i.Arguments[len(callConvArgs):len(i.Arguments)]
+		}
+
+		stackPadding := 0
+		if len(stackArgs)%2 != 0 {
+			stackPadding = 8
+		}
+
+		instructions := []Instruction{}
+
+		if stackPadding > 0 {
+			instructions = append(instructions, AllocateStack(stackPadding))
+		}
+
+		for i, arg := range registerArgs {
+			instructions = append(instructions,
+				&SimpleInstruction{
+					Opcode: Mov,
+					Rhs:    toAsmOperand(arg),
+					Lhs:    callConvArgs[i],
+				},
+			)
+		}
+
+		for _, arg := range slices.Backward(stackArgs) {
+			switch arg := toAsmOperand(arg).(type) {
+			case Imm:
+				instructions = append(instructions, &SimpleInstruction{Opcode: Push, Lhs: arg})
+			case Register:
+				instructions = append(instructions, &SimpleInstruction{Opcode: Push, Lhs: arg})
+			case Pseudo:
+				instructions = append(instructions,
+					&SimpleInstruction{Opcode: Mov, Rhs: arg, Lhs: AX},
+					&SimpleInstruction{Opcode: Push, Lhs: AX},
+				)
+			case Stack:
+				instructions = append(instructions,
+					&SimpleInstruction{Opcode: Mov, Rhs: arg, Lhs: AX},
+					&SimpleInstruction{Opcode: Push, Lhs: AX},
+				)
+			default:
+				panic(fmt.Sprintf("unexpected amd64.Operand: %#v", arg))
+			}
+		}
+
+		instructions = append(instructions, Call(i.FunctionName))
+		bytesToRemove := 8*len(stackArgs) + stackPadding
+		if bytesToRemove != 0 {
+			instructions = append(instructions, DeallocateStack(bytesToRemove))
+		}
+
+		if i.ReturnValue != nil {
+			asmDst := toAsmOperand(i.ReturnValue)
+			instructions = append(instructions, &SimpleInstruction{Opcode: Mov, Rhs: AX, Lhs: asmDst})
+		}
+
+		return instructions
 	default:
 		panic(fmt.Sprintf("unexpected ttir.Instruction: %#v", i))
 	}
@@ -239,11 +301,11 @@ func rpInstruction(i Instruction, r *replacePseudoPass) Instruction {
 			Cond: i.Cond,
 			Dst:  pseudoToStack(i.Dst, r),
 		}
-	case *JumpCCInstruction, JmpInstruction, Label:
+	case *JumpCCInstruction, JmpInstruction, Label, AllocateStack, DeallocateStack, Call:
 		return i
+	default:
+		panic(fmt.Sprintf("unexpected amd64.Instruction: %#v", i))
 	}
-
-	panic("invalid instruction")
 }
 
 func pseudoToStack(op Operand, r *replacePseudoPass) Operand {
@@ -347,9 +409,9 @@ func fixupInstruction(i Instruction) []Instruction {
 	case *SetCCInstruction:
 
 		return []Instruction{i}
-	case *JumpCCInstruction, JmpInstruction, Label:
+	case *JumpCCInstruction, JmpInstruction, Label, AllocateStack, DeallocateStack, Call:
 		return []Instruction{i}
+	default:
+		panic(fmt.Sprintf("unexpected amd64.Instruction: %#v", i))
 	}
-
-	panic("invalid instruction")
 }

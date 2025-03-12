@@ -101,6 +101,7 @@ const (
 
 	// One operand
 	Idiv Opcode = "idiv"
+	Push Opcode = "push"
 
 	// No operands
 	Ret Opcode = "ret"
@@ -159,6 +160,12 @@ func (j JmpInstruction) InstructionString() string {
 	return fmt.Sprintf("jmp %s", j)
 }
 
+type Call string
+
+func (c Call) InstructionString() string {
+	return fmt.Sprintf("call %s", c)
+}
+
 type SetCCInstruction struct {
 	Cond CondCode
 	Dst  Operand
@@ -166,6 +173,18 @@ type SetCCInstruction struct {
 
 func (si *SetCCInstruction) InstructionString() string {
 	return fmt.Sprintf("set%s %s", si.Cond, si.Dst.OperandString(One))
+}
+
+type AllocateStack uint
+
+func (as AllocateStack) InstructionString() string {
+	return fmt.Sprintf("sub rsp, %d", as)
+}
+
+type DeallocateStack uint
+
+func (ds DeallocateStack) InstructionString() string {
+	return fmt.Sprintf("add rsp, %d", ds)
 }
 
 type OperandSize int
@@ -202,6 +221,54 @@ func (r Register) OperandString(size OperandSize) string {
 			return "eax"
 		}
 		return "rax"
+	case CX:
+		switch size {
+		case One:
+			return "cl"
+		case Four:
+			return "ecx"
+		}
+		return "rcx"
+	case DX:
+		switch size {
+		case One:
+			return "dl"
+		case Four:
+			return "edx"
+		}
+		return "rdx"
+	case DI:
+		switch size {
+		case One:
+			return "dil"
+		case Four:
+			return "edi"
+		}
+		return "rdi"
+	case SI:
+		switch size {
+		case One:
+			return "sil"
+		case Four:
+			return "esi"
+		}
+		return "rsi"
+	case R8:
+		switch size {
+		case One:
+			return "r8b"
+		case Four:
+			return "r8d"
+		}
+		return "r8"
+	case R9:
+		switch size {
+		case One:
+			return "r9b"
+		case Four:
+			return "r9d"
+		}
+		return "r9"
 	case R10:
 		switch size {
 		case One:
@@ -218,8 +285,9 @@ func (r Register) OperandString(size OperandSize) string {
 			return "r11d"
 		}
 		return "r11"
+	default:
+		panic(fmt.Sprintf("unexpected amd64.Register: %#v", r))
 	}
-	return "INVALID_REGISTER"
 }
 
 type Imm int64

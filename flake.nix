@@ -44,8 +44,8 @@
           qbe
           (
             if system == "x86_64-linux"
-            then [fasm]
-            else []
+            then [fasm gdb]
+            else [lldb]
           )
         ];
       };
