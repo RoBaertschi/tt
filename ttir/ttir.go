@@ -117,15 +117,20 @@ func (l Label) String() string {
 func (l Label) instruction() {}
 
 type Call struct {
-	Label       string
-	Arguments   []Operand
+	FunctionName string
+	Arguments    []Operand
+	// NOTE: Nullable
 	ReturnValue Operand
 }
 
 func (c *Call) String() string {
 	b := strings.Builder{}
 
-	b.WriteString(c.ReturnValue.String() + " = call " + c.Label + " ")
+	if c.ReturnValue != nil {
+		b.WriteString(c.ReturnValue.String() + " = ")
+	}
+
+	b.WriteString("call " + c.FunctionName + " ")
 
 	for i, arg := range c.Arguments {
 		b.WriteString(arg.String())
@@ -134,6 +139,8 @@ func (c *Call) String() string {
 			b.WriteString(", ")
 		}
 	}
+
+	b.WriteRune('\n')
 
 	return b.String()
 }

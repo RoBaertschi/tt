@@ -148,6 +148,24 @@ func emitExpression(expr tast.Expression) (Operand, []Instruction) {
 		return nil, instructions
 	case *tast.VariableReference:
 		return &Var{Value: expr.Identifier}, []Instruction{}
+	case *tast.FunctionCall:
+		var dst Operand
+		if !expr.ReturnType.IsSameType(types.Unit) {
+			dst = &Var{Value: temp()}
+		}
+		args := []Operand{}
+
+		instructions := []Instruction{}
+
+		for _, arg := range expr.Arguments {
+			dst, argInstructions := emitExpression(arg)
+
+			instructions = append(instructions, argInstructions...)
+			args = append(args, dst)
+		}
+
+		instructions = append(instructions, &Call{FunctionName: expr.Identifier, Arguments: args, ReturnValue: dst})
+		return dst, instructions
 	default:
 		panic(fmt.Sprintf("unexpected tast.Expression: %#v", expr))
 	}

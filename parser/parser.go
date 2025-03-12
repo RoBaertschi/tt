@@ -454,6 +454,10 @@ func (p *Parser) parseFunctionCall() ast.Expression {
 		p.nextToken()
 
 		args = append(args, p.parseExpression(PrecLowest))
+		if !p.peekTokenIs(token.Comma) {
+			break
+		}
+		p.nextToken()
 	}
 
 	// Move onto the ')'

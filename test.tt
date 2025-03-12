@@ -1,17 +1,12 @@
 fn main(): i64 = {
-    i := 5;
-
-
-    if i == 5 {
-        0
-    } else {
-        1
-    };
-
-    test2(3)
+    test2(3, 0)
 };
 
-fn test2(hello: i64): i64 = {
-    hello // Comment test
+fn test2(until: i64, i: i64): i64 = {
+    if i >= until {
+        0
+    } else {
+        test2(until, i+1) + 1
+    }
 };
 
