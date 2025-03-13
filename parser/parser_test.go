@@ -165,7 +165,7 @@ func expectExpression(t *testing.T, expected ast.Expression, actual ast.Expressi
 
 func TestFunctionDeclaration(t *testing.T) {
 	test := parserTest{
-		input: "fn main() = 0;",
+		input: "fn main(): i64 = 0;",
 		expectedProgram: ast.Program{
 			Declarations: []ast.Declaration{
 				&ast.FunctionDeclaration{
@@ -180,7 +180,7 @@ func TestFunctionDeclaration(t *testing.T) {
 
 func TestBinaryExpressions(t *testing.T) {
 	test := parserTest{
-		input: "fn main() = true == true == true;",
+		input: "fn main(): i64 = true == true == true;",
 		expectedProgram: ast.Program{
 			Declarations: []ast.Declaration{
 				&ast.FunctionDeclaration{
@@ -204,7 +204,7 @@ func TestBinaryExpressions(t *testing.T) {
 
 func TestBlockExpression(t *testing.T) {
 	test := parserTest{
-		input: "fn main() = {\n3;\n{ 3+2 }\n}\n;",
+		input: "fn main(): i64 = {\n3;\n{ 3+2 }\n}\n;",
 		expectedProgram: ast.Program{
 			Declarations: []ast.Declaration{
 				&ast.FunctionDeclaration{
@@ -231,7 +231,7 @@ func TestBlockExpression(t *testing.T) {
 
 func TestGroupedExpression(t *testing.T) {
 	test := parserTest{
-		input: "fn main() = (3);",
+		input: "fn main(): i64 = (3);",
 		expectedProgram: ast.Program{
 			Declarations: []ast.Declaration{
 				&ast.FunctionDeclaration{
@@ -246,7 +246,7 @@ func TestGroupedExpression(t *testing.T) {
 
 func TestVariableExpression(t *testing.T) {
 	test := parserTest{
-		input: "fn main() = { x : u32 = 3; x };",
+		input: "fn main(): i64 = { x : i64 = 3; x };",
 		expectedProgram: ast.Program{
 			Declarations: []ast.Declaration{
 				&ast.FunctionDeclaration{
@@ -256,7 +256,7 @@ func TestVariableExpression(t *testing.T) {
 							&ast.VariableDeclaration{
 								InitializingExpression: &ast.IntegerExpression{Value: 3},
 								Identifier:             "x",
-								Type:                   "u32",
+								Type:                   "i64",
 							},
 						},
 						ReturnExpression: &ast.VariableReference{Identifier: "x"},

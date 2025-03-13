@@ -131,7 +131,7 @@ func expectOperand(t *testing.T, expected Operand, actual Operand) {
 
 func TestBasicFunction(t *testing.T) {
 	runTTIREmitterTest(t, ttirEmitterTest{
-		input: "fn main() = 0;",
+		input: "fn main(): i64 = 0;",
 		expected: Program{
 			Functions: []*Function{
 				{
@@ -149,7 +149,7 @@ func TestBasicFunction(t *testing.T) {
 
 func TestBinaryExpression(t *testing.T) {
 	runTTIREmitterTest(t, ttirEmitterTest{
-		input: "fn main() = 3 + 3 + 3;",
+		input: "fn main(): i64 = 3 + 3 + 3;",
 		expected: Program{
 			Functions: []*Function{
 				{Name: "main", Instructions: []Instruction{

@@ -9,10 +9,10 @@ _start:
 main:
   push rbp
   mov rbp, rsp
-  add rsp, -4
-  mov qword [rsp -4], 3
-  add qword [rsp -4], 3
-  mov rax, qword [rsp -4]
+  add rsp, -8
+  mov qword [rsp -8], 3
+  add qword [rsp -8], 3
+  mov rax, qword [rsp -8]
   mov rsp, rbp
   pop rbp
   ret
