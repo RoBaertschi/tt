@@ -313,7 +313,7 @@ func pseudoToStack(op Operand, r *replacePseudoPass) Operand {
 		if offset, ok := r.identToOffset[string(pseudo)]; ok {
 			return Stack(offset)
 		} else {
-			r.currentOffset -= 4
+			r.currentOffset -= 8
 			r.identToOffset[string(pseudo)] = r.currentOffset
 			return Stack(r.currentOffset)
 		}
