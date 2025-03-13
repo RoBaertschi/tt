@@ -3,10 +3,15 @@ package amd64
 import (
 	"fmt"
 	"slices"
+	"strings"
 
 	"robaertschi.xyz/robaertschi/tt/ast"
 	"robaertschi.xyz/robaertschi/tt/ttir"
 )
+
+func comment(c string) Comment {
+	return Comment(strings.ReplaceAll(strings.TrimRight(c, "\n"), "\n", "\n  ; "))
+}
 
 func toAsmOperand(op ttir.Operand) Operand {
 	switch op := op.(type) {
@@ -43,7 +48,7 @@ func CgProgram(prog *ttir.Program) *Program {
 }
 
 func cgFunction(f *ttir.Function) Function {
-	newInstructions := []Instruction{}
+	newInstructions := []Instruction{comment(f.String())}
 
 	for i, arg := range f.Arguments {
 		if i < len(callConvArgs) {
@@ -79,6 +84,7 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 	case *ttir.Ret:
 		if i.Op != nil {
 			return []Instruction{
+				comment(i.String()),
 				&SimpleInstruction{
 					Opcode: Mov,
 					Lhs:    AX,
@@ -89,14 +95,17 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 				},
 			}
 		} else {
-			return []Instruction{&SimpleInstruction{Opcode: Ret}}
+			return []Instruction{&SimpleInstruction{Opcode: Ret},
+				comment(i.String()),
+			}
 		}
 	case *ttir.Binary:
 		return cgBinary(i)
 	case ttir.Label:
-		return []Instruction{Label(i)}
+		return []Instruction{comment(i.String()), Label(i)}
 	case *ttir.JumpIfZero:
 		return []Instruction{
+			comment(i.String()),
 			&SimpleInstruction{
 				Opcode: Cmp,
 				Lhs:    toAsmOperand(i.Value),
@@ -109,6 +118,7 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 		}
 	case *ttir.JumpIfNotZero:
 		return []Instruction{
+			comment(i.String()),
 			&SimpleInstruction{
 				Opcode: Cmp,
 				Lhs:    toAsmOperand(i.Value),
@@ -120,9 +130,9 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 			},
 		}
 	case ttir.Jump:
-		return []Instruction{JmpInstruction(i)}
+		return []Instruction{comment(i.String()), JmpInstruction(i)}
 	case *ttir.Copy:
-		return []Instruction{&SimpleInstruction{Opcode: Mov, Lhs: toAsmOperand(i.Dst), Rhs: toAsmOperand(i.Src)}}
+		return []Instruction{comment(i.String()), &SimpleInstruction{Opcode: Mov, Lhs: toAsmOperand(i.Dst), Rhs: toAsmOperand(i.Src)}}
 	case *ttir.Call:
 		registerArgs := i.Arguments[0:min(len(callConvArgs), len(i.Arguments))]
 		stackArgs := []ttir.Operand{}
@@ -135,7 +145,7 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 			stackPadding = 8
 		}
 
-		instructions := []Instruction{}
+		instructions := []Instruction{comment(i.String())}
 
 		if stackPadding > 0 {
 			instructions = append(instructions, AllocateStack(stackPadding))
@@ -211,6 +221,7 @@ func cgBinary(b *ttir.Binary) []Instruction {
 		}
 
 		return []Instruction{
+			comment(b.String()),
 			&SimpleInstruction{
 				Opcode: Cmp,
 				Lhs:    toAsmOperand(b.Lhs),
@@ -238,11 +249,13 @@ func cgBinary(b *ttir.Binary) []Instruction {
 		}
 
 		return []Instruction{
+			comment(b.String()),
 			&SimpleInstruction{Opcode: Mov, Lhs: toAsmOperand(b.Dst), Rhs: toAsmOperand(b.Lhs)},
 			&SimpleInstruction{Opcode: opcode, Lhs: toAsmOperand(b.Dst), Rhs: toAsmOperand(b.Rhs)},
 		}
 	case ast.Divide:
 		return []Instruction{
+			comment(b.String()),
 			&SimpleInstruction{Opcode: Mov, Lhs: Register(AX), Rhs: toAsmOperand(b.Lhs)},
 			&SimpleInstruction{Opcode: Cdq},
 			&SimpleInstruction{Opcode: Idiv, Lhs: toAsmOperand(b.Rhs)},
@@ -301,7 +314,7 @@ func rpInstruction(i Instruction, r *replacePseudoPass) Instruction {
 			Cond: i.Cond,
 			Dst:  pseudoToStack(i.Dst, r),
 		}
-	case *JumpCCInstruction, JmpInstruction, Label, AllocateStack, DeallocateStack, Call:
+	case *JumpCCInstruction, JmpInstruction, Label, AllocateStack, DeallocateStack, Call, Comment:
 		return i
 	default:
 		panic(fmt.Sprintf("unexpected amd64.Instruction: %#v", i))
@@ -407,9 +420,8 @@ func fixupInstruction(i Instruction) []Instruction {
 
 		return []Instruction{i}
 	case *SetCCInstruction:
-
 		return []Instruction{i}
-	case *JumpCCInstruction, JmpInstruction, Label, AllocateStack, DeallocateStack, Call:
+	case *JumpCCInstruction, JmpInstruction, Label, AllocateStack, DeallocateStack, Call, Comment:
 		return []Instruction{i}
 	default:
 		panic(fmt.Sprintf("unexpected amd64.Instruction: %#v", i))

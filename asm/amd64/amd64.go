@@ -112,6 +112,12 @@ type Instruction interface {
 	InstructionString() string
 }
 
+type Comment string
+
+func (c Comment) InstructionString() string {
+	return "; " + strings.TrimRight(string(c), "\n")
+}
+
 type SimpleInstruction struct {
 	Opcode Opcode
 	// Dst
