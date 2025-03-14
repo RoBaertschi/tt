@@ -366,6 +366,8 @@ func fixupInstruction(i Instruction) []Instruction {
 			if lhs, ok := i.Lhs.(Stack); ok {
 				if rhs, ok := i.Rhs.(Stack); ok {
 					return []Instruction{
+						comment("FIXUP: Stack and Stack for Mov"),
+						comment(i.InstructionString()),
 						&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
 						&SimpleInstruction{Opcode: Mov, Lhs: lhs, Rhs: Register(R10)},
 					}
@@ -374,6 +376,8 @@ func fixupInstruction(i Instruction) []Instruction {
 		case Imul:
 			if lhs, ok := i.Lhs.(Stack); ok {
 				return []Instruction{
+					comment("FIXUP: Stack as Dst for Imul"),
+					comment(i.InstructionString()),
 					&SimpleInstruction{Opcode: Mov, Lhs: Register(R11), Rhs: lhs},
 					&SimpleInstruction{Opcode: Imul, Lhs: Register(R11), Rhs: i.Rhs},
 					&SimpleInstruction{Opcode: Mov, Lhs: lhs, Rhs: Register(R11)},
@@ -384,12 +388,16 @@ func fixupInstruction(i Instruction) []Instruction {
 			if lhs, ok := i.Lhs.(Stack); ok {
 				if rhs, ok := i.Rhs.(Stack); ok {
 					return []Instruction{
+						comment("FIXUP: Stack and Stack for Binary"),
+						comment(i.InstructionString()),
 						&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
 						&SimpleInstruction{Opcode: i.Opcode, Lhs: lhs, Rhs: Register(R10)},
 					}
 				}
 			} else if lhs, ok := i.Lhs.(Imm); ok && i.Opcode == Idiv {
 				return []Instruction{
+					comment("FIXUP: Imm as Dst for Idiv"),
+					comment(i.InstructionString()),
 					&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: lhs},
 					&SimpleInstruction{Opcode: Idiv, Lhs: Register(R10)},
 				}
@@ -398,12 +406,16 @@ func fixupInstruction(i Instruction) []Instruction {
 			if lhs, ok := i.Lhs.(Stack); ok {
 				if rhs, ok := i.Rhs.(Stack); ok {
 					return []Instruction{
+						comment("FIXUP: Stack and Stack for Cmp"),
+						comment(i.InstructionString()),
 						&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
 						&SimpleInstruction{Opcode: i.Opcode, Lhs: lhs, Rhs: Register(R10)},
 					}
 				}
 			} else if lhs, ok := i.Lhs.(Imm); ok {
 				return []Instruction{
+					comment("FIXUP: Imm Dst for Cmp"),
+					comment(i.InstructionString()),
 					&SimpleInstruction{
 						Opcode: Mov,
 						Lhs:    Register(R11),
