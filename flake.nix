@@ -45,8 +45,9 @@
           (
             if system == "x86_64-linux"
             then [fasm gdb]
-            else [lldb]
+            else []
           )
+          lldb
         ];
       };
     });

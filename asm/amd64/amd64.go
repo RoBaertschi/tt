@@ -5,13 +5,13 @@ import (
 	"strings"
 )
 
-var callConvArgs map[int]Register = map[int]Register{
-	1: DI,
-	2: SI,
-	3: DX,
-	4: CX,
-	5: R8,
-	6: R9,
+var callConvArgs []Register = []Register{
+	DI,
+	SI,
+	DX,
+	CX,
+	R8,
+	R9,
 }
 
 type Program struct {
@@ -68,7 +68,7 @@ type Function struct {
 func (f *Function) Emit() string {
 	var builder strings.Builder
 
-	builder.WriteString(fmt.Sprintf("%s:\n  push rbp\n  mov rbp, rsp\n  add rsp, %d\n", f.Name, f.StackOffset))
+	builder.WriteString(fmt.Sprintf("%s:\n  push rbp\n  mov rbp, rsp\n", f.Name))
 
 	for _, inst := range f.Instructions {
 		builder.WriteString(fmt.Sprintf("  %s\n", inst.InstructionString()))
@@ -128,7 +128,7 @@ type SimpleInstruction struct {
 
 func (i *SimpleInstruction) InstructionString() string {
 	if i.Opcode == Ret {
-		return fmt.Sprintf("mov rsp, rbp\n  pop rbp\n  ret\n")
+		return fmt.Sprintf("leave\n  ret\n")
 	}
 
 	// No operands
@@ -316,7 +316,7 @@ func (s Stack) OperandString(size OperandSize) string {
 		sizeString = "qword"
 	}
 
-	return fmt.Sprintf("%s [rsp %+d]", sizeString, s)
+	return fmt.Sprintf("%s [rbp %+d]", sizeString, s)
 }
 
 type Pseudo string

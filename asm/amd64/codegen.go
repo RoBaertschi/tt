@@ -134,7 +134,7 @@ func cgInstruction(i ttir.Instruction) []Instruction {
 	case *ttir.Copy:
 		return []Instruction{comment(i.String()), &SimpleInstruction{Opcode: Mov, Lhs: toAsmOperand(i.Dst), Rhs: toAsmOperand(i.Src)}}
 	case *ttir.Call:
-		registerArgs := i.Arguments[0:min(len(callConvArgs), len(i.Arguments))]
+		registerArgs := i.Arguments[:min(len(callConvArgs), len(i.Arguments))]
 		stackArgs := []ttir.Operand{}
 		if len(callConvArgs) < len(i.Arguments) {
 			stackArgs = i.Arguments[len(callConvArgs):len(i.Arguments)]
@@ -273,7 +273,7 @@ type replacePseudoPass struct {
 }
 
 func replacePseudo(prog Program) Program {
-	newFunctions := make([]Function, 0)
+	newFunctions := []Function{}
 
 	for _, f := range prog.Functions {
 		newFunctions = append(newFunctions, rpFunction(f))
@@ -283,7 +283,7 @@ func replacePseudo(prog Program) Program {
 }
 
 func rpFunction(f Function) Function {
-	newInstructions := make([]Instruction, 0)
+	newInstructions := []Instruction{}
 
 	r := &replacePseudoPass{
 		identToOffset: make(map[string]int64),
@@ -337,7 +337,7 @@ func pseudoToStack(op Operand, r *replacePseudoPass) Operand {
 // Third pass, fixup invalid instructions
 
 func instructionFixup(prog Program) Program {
-	newFuncs := make([]Function, 0)
+	newFuncs := []Function{}
 
 	for _, f := range prog.Functions {
 		newFuncs = append(newFuncs, fixupFunction(f))
@@ -348,7 +348,17 @@ func instructionFixup(prog Program) Program {
 
 func fixupFunction(f Function) Function {
 	// The function will at minimum require the same amount of instructions, but never less
-	newInstructions := make([]Instruction, 0)
+	newInstructions := []Instruction{}
+
+	if f.StackOffset != 0 {
+		stack := -f.StackOffset
+		if stack > 0 {
+			stack = stack + (16 - (stack % 16))
+		} else {
+			stack = stack - (16 - (stack % 16))
+		}
+		newInstructions = append(newInstructions, comment(fmt.Sprintf("Allocated %d on stack", stack)), AllocateStack(stack))
+	}
 
 	for _, i := range f.Instructions {
 		newInstructions = append(newInstructions, fixupInstruction(i)...)
@@ -363,13 +373,13 @@ func fixupInstruction(i Instruction) []Instruction {
 	case *SimpleInstruction:
 		switch i.Opcode {
 		case Mov:
-			if lhs, ok := i.Lhs.(Stack); ok {
-				if rhs, ok := i.Rhs.(Stack); ok {
+			if dst, ok := i.Lhs.(Stack); ok {
+				if src, ok := i.Rhs.(Stack); ok {
 					return []Instruction{
 						comment("FIXUP: Stack and Stack for Mov"),
 						comment(i.InstructionString()),
-						&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
-						&SimpleInstruction{Opcode: Mov, Lhs: lhs, Rhs: Register(R10)},
+						&SimpleInstruction{Opcode: Mov, Lhs: R10, Rhs: src},
+						&SimpleInstruction{Opcode: Mov, Lhs: dst, Rhs: R10},
 					}
 				}
 			}
@@ -378,9 +388,9 @@ func fixupInstruction(i Instruction) []Instruction {
 				return []Instruction{
 					comment("FIXUP: Stack as Dst for Imul"),
 					comment(i.InstructionString()),
-					&SimpleInstruction{Opcode: Mov, Lhs: Register(R11), Rhs: lhs},
-					&SimpleInstruction{Opcode: Imul, Lhs: Register(R11), Rhs: i.Rhs},
-					&SimpleInstruction{Opcode: Mov, Lhs: lhs, Rhs: Register(R11)},
+					&SimpleInstruction{Opcode: Mov, Lhs: R11, Rhs: lhs},
+					&SimpleInstruction{Opcode: Imul, Lhs: R11, Rhs: i.Rhs},
+					&SimpleInstruction{Opcode: Mov, Lhs: lhs, Rhs: R11},
 				}
 			}
 			fallthrough
@@ -390,16 +400,16 @@ func fixupInstruction(i Instruction) []Instruction {
 					return []Instruction{
 						comment("FIXUP: Stack and Stack for Binary"),
 						comment(i.InstructionString()),
-						&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
-						&SimpleInstruction{Opcode: i.Opcode, Lhs: lhs, Rhs: Register(R10)},
+						&SimpleInstruction{Opcode: Mov, Lhs: R10, Rhs: rhs},
+						&SimpleInstruction{Opcode: i.Opcode, Lhs: lhs, Rhs: R10},
 					}
 				}
 			} else if lhs, ok := i.Lhs.(Imm); ok && i.Opcode == Idiv {
 				return []Instruction{
 					comment("FIXUP: Imm as Dst for Idiv"),
 					comment(i.InstructionString()),
-					&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: lhs},
-					&SimpleInstruction{Opcode: Idiv, Lhs: Register(R10)},
+					&SimpleInstruction{Opcode: Mov, Lhs: R10, Rhs: lhs},
+					&SimpleInstruction{Opcode: Idiv, Lhs: R10},
 				}
 			}
 		case Cmp:
@@ -408,8 +418,8 @@ func fixupInstruction(i Instruction) []Instruction {
 					return []Instruction{
 						comment("FIXUP: Stack and Stack for Cmp"),
 						comment(i.InstructionString()),
-						&SimpleInstruction{Opcode: Mov, Lhs: Register(R10), Rhs: rhs},
-						&SimpleInstruction{Opcode: i.Opcode, Lhs: lhs, Rhs: Register(R10)},
+						&SimpleInstruction{Opcode: Mov, Lhs: R10, Rhs: rhs},
+						&SimpleInstruction{Opcode: i.Opcode, Lhs: lhs, Rhs: R10},
 					}
 				}
 			} else if lhs, ok := i.Lhs.(Imm); ok {
@@ -418,12 +428,12 @@ func fixupInstruction(i Instruction) []Instruction {
 					comment(i.InstructionString()),
 					&SimpleInstruction{
 						Opcode: Mov,
-						Lhs:    Register(R11),
-						Rhs:    Imm(lhs),
+						Lhs:    R11,
+						Rhs:    lhs,
 					},
 					&SimpleInstruction{
 						Opcode: Cmp,
-						Lhs:    Register(R11),
+						Lhs:    R11,
 						Rhs:    i.Rhs,
 					},
 				}
