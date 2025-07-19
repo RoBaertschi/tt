@@ -211,7 +211,9 @@ const (
 	R9
 	R10
 	R11
+)
 
+const (
 	One OperandSize = iota
 	Four
 	Eight
